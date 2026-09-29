@@ -107,7 +107,7 @@ const ic = n => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${I[n]}<
 const TABS = { parent: [['board', 'Nástenka', 'home'], ['cal', 'Kalendár', 'cal'], ['msg', 'Správy', 'chat'], ['pay', 'Platby', 'card'], ['kid', 'Dieťa', 'kid']], teacher: [['class', 'Trieda', 'group'], ['posts', 'Oznamy', 'mega'], ['msg', 'Správy', 'chat'], ['cal', 'Kalendár', 'cal']], admin: [['over', 'Prehľad'], ['class', 'Trieda'], ['msg', 'Správy'], ['cal', 'Kalendár'], ['users', 'Používatelia'], ['staff', 'Personál'], ['report', 'Výkaz'], ['kitchen', 'Kuchyňa'], ['posts', 'Oznamy']] }
 const logo = () => `<div class="row"><img src="icon-192.png" width="36" height="36" alt=""><div><div class="disp" style="font-size:22px">Ďatelinka</div><div class="mute" style="font-size:12px">Materská škola Zvolen</div></div></div>`
 const lock = (t, d) => `<div class="lock">${ic('lock')}<div><div class="row" style="gap:8px"><b>${t}</b><span class="gdpr">Podlieha GDPR</span></div><div class="mute" style="margin-top:4px">${d}</div></div></div>`
-const adminTabs = () => S.role != 'admin' ? '' : `<div class="row sp" style="flex-wrap:wrap">${logo()}<div class="chips">${TABS.admin.map(([v, l]) => `<button class="chip ${S.v == v ? 'on' : ''}" data-a="go" data-v="${v}">${l}${v == 'msg' ? badge(unreadAll()) : ''}</button>`).join('')}</div></div>`
+const adminTabs = () => S.role != 'admin' ? '' : `<div class="row sp" style="flex-wrap:wrap">${logo()}<div class="chips atabs">${TABS.admin.map(([v, l]) => `<button class="chip ${S.v == v ? 'on' : ''}" data-a="go" data-v="${v}">${l}${v == 'msg' ? badge(unreadAll()) : ''}</button>`).join('')}</div></div>`
 const kidChips = () => S.d.children.length < 2 ? '' : `<div class="chips">${S.d.children.map(k => `<button class="chip ${k.id == S.child ? 'on' : ''}" data-a="child" data-id="${k.id}">${esc(k.name)}</button>`).join('')}</div>`
 const todo = () => [
   ...S.d.staff.filter(x => !x.substitute_id && x.day >= TODAY).map(x => `<div class="banner" style="background:var(--o);color:var(--ot)"><b>${sk(x.day)}:</b> za ${esc(pname(x.teacher_id))} (${esc(classOf(x.teacher_id).name)}) chýba záskok</div>`),
@@ -534,10 +534,13 @@ function render() {
     const g = gaps()[0]; if (g) { S.child = g[0].id; S.v = 'wizard' }
   }
   const view = S.recovery ? 'password' : S.me.approved || S.v == 'password' ? S.v : 'pending'
-  const wide = S.role == 'admin' && !['posts', 'class', 'msg', 'cal', 'absence', 'password', 'settings'].includes(view) || S.role == 'kitchen' && !['password', 'settings'].includes(view)
+  const NARROW = ['posts', 'class', 'msg', 'cal', 'absence', 'password', 'settings']   // vedeniu ich vycentrujeme do užšieho stĺpca, hlavička ostáva široká
+  const wide = S.role == 'admin' || S.role == 'kitchen' && !['password', 'settings'].includes(view)
   app.className = wide ? 'wide' : ''
   bar.className = wide ? 'wide' : ''
-  app.innerHTML = V[view]()
+  let html = V[view]()
+  if (S.role == 'admin' && NARROW.includes(view)) { const t = adminTabs(); if (!html.startsWith(t)) html = '<div class="mid">' + html + '</div>'; else html = t + '<div class="mid">' + html.slice(t.length) + '</div>' }
+  app.innerHTML = html
   if (key && val && f.type != 'checkbox') {
     const el = [...app.querySelectorAll(`[name="${key}"],[data-c="${key}"],[data-d="${key}"]`)]
       .find(e => (e.form?.dataset?.a ?? form) == form && e.dataset.id == f.dataset.id && (e.form?.dataset?.child ?? e.dataset.child) == (f.form?.dataset?.child ?? f.dataset.child))
