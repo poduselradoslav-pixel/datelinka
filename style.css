@@ -67,3 +67,7 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
 #bar .pop .note.new{background:var(--gs);border-radius:10px}
 #bar .pop .note span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--mute)}
 #bar .pop .note small{color:var(--mute);font-size:12px}
+.st{display:flex;gap:10px;align-items:center}
+.dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--pill);font-weight:700;font-size:13px;flex-shrink:0}
+.dot.ok{background:var(--g);color:#fff}.dot.cur{border:2px solid var(--g);color:var(--g)}
+.dot .ic{width:16px;height:16px}

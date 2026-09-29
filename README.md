@@ -24,7 +24,7 @@ scripts/setup-push.sh             jednorazové nastavenie push
    ```sql
    update profiles set role = 'admin', approved = true where email = 'tvoj@email.sk';
    ```
-5. **SMTP** zatiaľ netreba. Bude potrebné pre „zabudnuté heslo“ (odkaz na nové heslo príde e-mailom). Dovtedy heslo resetuješ v **Authentication → Users**.
+5. **SMTP (pre „zabudnuté heslo“).** Vstavaný e-mail Supabase posiela len členom tímu a pár správ za hodinu, na rodičov nestačí. V **Authentication → Emails → SMTP Settings** zapni **Custom SMTP** a zadaj údaje vlastného poskytovateľa (napríklad Brevo alebo Resend, oba majú bezplatný plán, alebo Gmail s heslom aplikácie: `smtp.gmail.com`, port 465). Ako odosielateľa nastav adresu, ktorú poskytovateľ overil. Text e-mailu upravíš v **Authentication → Emails → Reset password**.
 6. **Authentication → URL Configuration.** Ako Site URL nastav adresu z GitHub Pages (krok 2), napríklad `https://tvoje-meno.github.io/datelinka/`. Tú istú adresu, prípadne aj `http://localhost:8000`, pridaj do Redirect URLs.
 7. **Project Settings → API Keys.** Skopíruj Project URL a **Publishable key** do `config.js`. Secret alebo service_role kľúč do repozitára nikdy nedávaj.
 
@@ -69,6 +69,8 @@ Zvonček v platforme funguje hneď po spustení migrácií. Push (upozornenie na
 
 Ako to ide: nová správa, oznam alebo odhlásenie → trigger vloží riadok do `notifications` (to je zvonček) → ďalší trigger zavolá funkciu `push` → tá pošle upozornenie na zariadenia adresáta. Každý si v nastaveniach vie druhy upozornení vypnúť.
 
+Migrácia `…_pripomienky.sql` navyše každý pracovný deň o 7:30 pošle rodičom pripomienku, že stravu možno odhlásiť do 8:00 (nepošle sa, ak je dieťa už odhlásené, a rodič ju vie vypnúť v nastaveniach), a upozornenia staršie ako 7 dní maže. Využíva rozšírenie pg_cron. Ak ho migrácia nevie zapnúť, zapni ho v **Database → Extensions** a spusti migráciu znova.
+
 Kto dostane upozornenie:
 - nový oznam: rodičia triedy, alebo celej MŠ
 - nová správa: rodičia dieťaťa a učiteľky jeho triedy (okrem odosielateľa)
@@ -104,7 +106,7 @@ Potom rodič vyplní údaje v karte dieťaťa. Učiteľky a vedenie ich vidia pr
 
 - **Platby.** Okno pre rodičov je pripravené a prázdne. Doplnia sa platby škôlka, kuchyňa, ZRPŠ a ďalšie po dohode.
 - **Fotogaléria** a **offline režim** (service worker zatiaľ obsluhuje len push).
-- **Zabudnuté heslo** funguje až s nastaveným SMTP (Authentication → Emails → SMTP Settings). Dovtedy heslo resetuješ v **Authentication → Users**. Prihlásený používateľ si heslo zmení sám cez **Menu → Zmeniť heslo** hore.
+- **Zabudnuté heslo** funguje až s nastaveným SMTP (krok 5). Dovtedy heslo resetuješ v **Authentication → Users**. Prihlásený používateľ si heslo zmení sám cez **Menu → Zmeniť heslo** hore.
 
 ## GDPR pred spustením
 

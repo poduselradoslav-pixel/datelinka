@@ -32,7 +32,7 @@ const DEF = { parent: 'board', teacher: 'class', admin: 'over', kitchen: 'kitche
 const TYPES = { oznam: 'Oznam', prineste: 'Prineste', anketa: 'Anketa', udalost: 'Udalosť' }
 const REASONS = ['Choroba', 'Rodinné dôvody', 'Dovolenka', 'Návšteva lekára', 'Iné']
 
-const S = { me: null, role: null, v: null, d: {}, filter: 'all', form: null, draft: null, thread: null, week: 0, reg: false, forgot: false, recovery: false, push: false, menu: false, bell: false,
+const S = { me: null, role: null, v: null, d: {}, filter: 'all', form: null, draft: null, thread: null, week: 0, reg: false, forgot: false, recovery: false, push: false, menu: false, bell: false, wizChecked: false,
   day: TODAY, since: PREV_MONTH, repMonth: TODAY.slice(0, 7), absKid: null }
 
 // ---------- dáta ----------
@@ -157,12 +157,31 @@ V.password = () => `<header class="row"><button class="btn ghost" aria-label="Sp
  <form class="card" data-a="setPassword"><label class="f">Nové heslo (aspoň 8 znakov)<input name="p1" type="password" autocomplete="new-password" minlength="8" required></label>
  <label class="f">Nové heslo znova<input name="p2" type="password" autocomplete="new-password" minlength="8" required></label><button class="btn">Uložiť heslo</button></form>`
 
+// Sprievodca: rodič má mať pri každom dieťati aspoň jednu osobu na vyzdvihnutie a jeden núdzový kontakt
+const gaps = () => S.role != 'parent' ? [] : S.d.children.flatMap(k => [!S.d.pickups.some(p => p.child_id == k.id) && [k, 'pick'], !S.d.emergency.some(e => e.child_id == k.id) && [k, 'contact']].filter(Boolean))
+const gapText = () => gaps().map(([k, t]) => `${esc(first(k.name))}: ${t == 'pick' ? 'osoba na vyzdvihnutie' : 'núdzový kontakt'}`).join(' · ')
+V.wizard = () => {
+  const k = myKid()
+  if (!k) return `${logo()}<div class="card">Zatiaľ nemáte priradené dieťa. Riaditeľka vám ho priradí po schválení účtu, prípadne sa ozvite v škôlke.</div>`
+  const pk = S.d.pickups.some(p => p.child_id == k.id), ec = S.d.emergency.some(e => e.child_id == k.id)
+  const steps = [[`Dieťa: ${esc(k.name)} · ${esc(cls(k.class_id).name)}`, true], ['Kto môže vyzdvihnúť dieťa', pk], ['Núdzový kontakt', ec]], cur = steps.findIndex(x => !x[1])
+  const others = gaps().filter(g => g[0].id != k.id).length
+  const form = [null,
+    `<div class="mute">Pridajte aspoň jednu osobu (aj seba). Učiteľka jej dieťa odovzdá až po odovzdaní písomného splnomocnenia v škôlke.</div>${S.d.pickups.filter(p => p.child_id == k.id).map(p => `<div><b>${esc(p.name)}</b> <span class="mute">${esc(p.relation)}</span></div>`).join('')}
+     <form class="grid2" data-a="addPick" data-child="${k.id}"><input name="n" aria-label="Meno" placeholder="Meno a priezvisko" required><input name="r" aria-label="Vzťah" placeholder="Vzťah (mama, babka…)" required><button class="btn" style="grid-column:span 2">Pridať osobu</button></form>`,
+    `<div class="mute">Kontakt, na ktorý sa škôlka dovolá, keď ste nedostupní. Ďalšie pridáte neskôr v karte Dieťa.</div>
+     <form class="grid2" data-a="addContact" data-child="${k.id}"><input name="n" aria-label="Meno" placeholder="Meno a priezvisko" required><input name="r" aria-label="Vzťah" placeholder="Vzťah"><input name="p" type="tel" aria-label="Telefón" placeholder="Telefón (+421 9xx xxx xxx)" required style="grid-column:span 2"><button class="btn" style="grid-column:span 2">Pridať kontakt</button></form>`][cur]
+  return `${logo()}${kidChips()}<h1 style="font-size:24px">${cur < 0 ? 'Všetko je vyplnené' : 'Doplňte údaje'}</h1>
+ <div class="card">${steps.map(([l, ok], i) => `<div class="st"><span class="dot ${ok ? 'ok' : i == cur ? 'cur' : ''}">${ok ? ic('ok') : i + 1}</span><span ${i == cur ? 'style="font-weight:700"' : ok ? 'class="mute"' : ''}>${l}</span></div>`).join('')}</div>
+ ${cur < 0 ? `<div class="card">Ďakujeme, škôlka má všetko potrebné.${others ? ` Ešte treba doplniť údaje pri ďalšom dieťati.` : ''}<button class="btn" data-a="go" data-v="board">Pokračovať</button></div>`
+   : `<div class="card"><div class="lbl">Krok ${cur + 1} z 3</div>${form}</div><button class="btn ghost" data-a="go" data-v="board">Neskôr</button>`}`
+}
 const pref = k => S.d.prefs?.[0]?.[k] ?? true
 const unseen = () => S.d.notes?.filter(n => !n.read_at).length || 0
 const THEMES = [['auto', 'Auto'], ['light', 'Svetlý'], ['dark', 'Tmavý']]
 V.settings = () => `<header class="row"><button class="btn ghost" aria-label="Späť" data-a="go" data-v="${DEF[S.role]}">${ic('back')}</button><h1 style="font-size:22px">Upozornenia</h1></header>
  <div class="card"><div class="lbl">O čom chcem vedieť</div>
-  ${[['posts', 'Nové oznamy', S.role == 'parent'], ['messages', 'Nové správy', S.role != 'kitchen'], ['absences', 'Odhlásenia detí', S.role == 'teacher' || S.role == 'admin']].filter(x => x[2]).map(([k, l]) => `<label class="row"><input type="checkbox" data-c="pref" data-k="${k}" ${pref(k) ? 'checked' : ''}><span>${l}</span></label>`).join('')}
+  ${[['posts', 'Nové oznamy', S.role == 'parent'], ['reminders', 'Ranná pripomienka odhlásenia (7:30)', S.role == 'parent'], ['messages', 'Nové správy', S.role != 'kitchen'], ['absences', 'Odhlásenia detí', S.role == 'teacher' || S.role == 'admin']].filter(x => x[2]).map(([k, l]) => `<label class="row"><input type="checkbox" data-c="pref" data-k="${k}" ${pref(k) ? 'checked' : ''}><span>${l}</span></label>`).join('')}
   <div class="mute">Vypnutý druh sa nezobrazí ani v zvončeku, ani ako push.</div></div>
  <div class="card"><div class="lbl">Push do zariadenia</div>
   <label class="row"><input type="checkbox" data-c="pref" data-k="push" ${pref('push') ? 'checked' : ''}><span>Posielať push upozornenia</span></label>
@@ -209,7 +228,7 @@ V.board = () => {
   const k = myKid()
   if (!k) return `${logo()}<div class="card">Zatiaľ nemáte priradené dieťa. Ozvite sa, prosím, v škôlke.</div>`
   const ps = S.d.posts.filter(p => (!p.class_id || p.class_id == k.class_id) && (S.filter == 'all' || (S.filter == 'cls') == (p.class_id == k.class_id))).sort((a, b) => (b.pinned - a.pinned) || (b.id - a.id))
-  return `${logo()}${kidChips()}
+  return `${logo()}${kidChips()}${gaps().length ? `<div class="banner row sp" style="background:var(--o);color:var(--ot)"><span><b>Doplňte údaje:</b> ${gapText()}</span><button class="btn ghost" style="color:var(--ot);font-weight:700" data-a="go" data-v="wizard">Doplniť</button></div>` : ''}
  <section class="card row" style="flex-direction:row;background:var(--g);color:#fff;border:0">
   <div class="grow"><h2 style="font-size:19px;font-weight:600">${esc(first(k.name))} nepríde?</h2><div style="font-size:13px;color:var(--gb);margin-top:4px">Stravu na ${sk(NEXT)} odhlásite do ${DEADLINE}:00 v ten deň. Príchod do 8:00, potom sa budova zamyká.</div></div>
   <button class="btn" style="background:var(--card);color:var(--g)" data-a="go" data-v="absence">Odhlásiť</button></section>
@@ -366,6 +385,7 @@ const A = {
     if (!n.read_at) await q(sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id))
     if (n.kind == 'message' && n.child_id) { if (S.role == 'parent') S.child = n.child_id; else S.thread = n.child_id; S.v = 'msg' }
     else if (n.kind == 'absence' && n.child_id) { S.cls = byId(S.d.children, n.child_id)?.class_id ?? S.cls; S.v = 'class' }
+    else if (n.kind == 'reminder') { S.child = n.child_id ?? S.child; S.v = 'absence' }
     else if (n.kind == 'post') S.v = S.role == 'parent' ? 'board' : 'posts'
     scrollTo(0, 0)
   },
@@ -498,6 +518,10 @@ function render() {
   if (!S.me) { app.className = ''; nav.hidden = true; bar.innerHTML = ''; app.innerHTML = V.login(); return }
   // realtime obnova nesmie zmazať rozpísaný text: zapamätáme si pole s kurzorom
   const f = document.activeElement, key = f?.name || f?.dataset?.c || f?.dataset?.d, val = f?.value, form = f?.form?.dataset?.a
+  if (S.role == 'parent' && S.me.approved && !S.wizChecked && S.d.children) {   // po prihlásení otvoríme sprievodcu, ak niečo chýba
+    S.wizChecked = true
+    const g = gaps()[0]; if (g) { S.child = g[0].id; S.v = 'wizard' }
+  }
   const view = S.recovery ? 'password' : S.me.approved || S.v == 'password' ? S.v : 'pending'
   const wide = S.role == 'admin' && !['posts', 'class', 'msg', 'cal', 'absence', 'password', 'settings'].includes(view) || S.role == 'kitchen' && !['password', 'settings'].includes(view)
   app.className = wide ? 'wide' : ''
