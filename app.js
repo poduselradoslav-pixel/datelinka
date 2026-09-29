@@ -593,8 +593,12 @@ let rt, rtTimer
 function realtime() {
   if (rt) return
   rt = sb.channel('zmeny')
-  for (const table of ['messages', 'posts', 'absences', 'attendance'])
-    rt.on('postgres_changes', { event: '*', schema: 'public', table }, () => { clearTimeout(rtTimer); rtTimer = setTimeout(() => run(() => {}), 400) })
+  const refresh = () => { clearTimeout(rtTimer); rtTimer = setTimeout(() => run(() => {}), 400) }
+  for (const table of ['messages', 'posts', 'absences', 'attendance', 'post_reads', 'poll_votes', 'children', 'guardians', 'classes', 'class_teachers', 'pickups', 'consents',
+    'emergency_contacts', 'child_health', 'staff_absences', 'menu', 'settings', 'thread_reads'])
+    rt.on('postgres_changes', { event: '*', schema: 'public', table }, refresh)
+  // zmena vlastného profilu (schválenie, rola, deaktivácia) načíta účet znova, zmena cudzieho len obnoví zoznamy
+  rt.on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, p => p.new?.id == S.me?.id ? run(boot) : refresh())
   rt.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, p => { if (!document.hidden) toast(p.new.title); clearTimeout(rtTimer); rtTimer = setTimeout(() => run(() => {}), 400) })
   rt.subscribe()
 }
@@ -628,7 +632,7 @@ async function boot() {
   S.me = await q(sb.from('profiles').select('*').eq('id', session.user.id).single())
   S.role = S.me.role; S.v = S.me.approved && !S.me.blocked ? (S.v && S.v != 'pending' ? S.v : DEF[S.role]) : 'pending'
   if (S.me.blocked) S.me.approved = false
-  if (S.me.approved) realtime()
+  realtime()   // aj čakajúci účet: po schválení sa mu platforma otvorí sama
   const reg = await navigator.serviceWorker?.register('sw.js').catch(() => null)
   S.push = !!(await reg?.pushManager?.getSubscription())
 }
