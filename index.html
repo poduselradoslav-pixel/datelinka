@@ -12,6 +12,19 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="style.css">
+<script>
+// vzhľad nastavíme skôr, než sa vykreslí stránka (bez bliknutia): auto sleduje systém
+(function () {
+  var mq = matchMedia('(prefers-color-scheme:dark)'), get = function () { try { return localStorage.getItem('theme') || 'auto' } catch (e) { return 'auto' } }
+  function apply() {
+    var m = get(), d = m == 'dark' || m == 'auto' && mq.matches
+    document.documentElement.dataset.theme = d ? 'dark' : 'light'
+    document.querySelector('meta[name=theme-color]').content = d ? '#141A15' : '#2E6B3B'
+  }
+  window.theme = { get: get, set: function (m) { try { localStorage.setItem('theme', m) } catch (e) { } apply() } }
+  mq.addEventListener('change', apply); apply()
+})()
+</script>
 </head>
 <body>
 <header id="bar"></header>

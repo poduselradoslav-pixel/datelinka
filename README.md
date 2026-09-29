@@ -2,7 +2,7 @@
 
 Platforma pre Materskú školu Ďatelinka vo Zvolene. Slúži na nástenku s oznamami, odhlasovanie detí aj stravy, dochádzku, správy s učiteľkami, suplovanie a jedálny lístok.
 
-Frontend je statické PWA bez build kroku (HTML, CSS a vanilla JS), hostované na **GitHub Pages**. Backend tvorí **Supabase**: Postgres s RLS, prihlásenie e-mailom a heslom so schvaľovaním riaditeľkou a Edge Function na push notifikácie.
+Frontend je statické PWA bez build kroku (HTML, CSS a vanilla JS), hostované na **GitHub Pages**. Backend tvorí **Supabase**: Postgres s RLS, prihlásenie e-mailom a heslom so schvaľovaním riaditeľkou zvonček s upozorneniami a Edge Function na push notifikácie.
 
 ```
 index.html, style.css, app.js     platforma
@@ -10,6 +10,7 @@ config.js                         URL a verejný kľúč Supabase, VAPID public 
 sw.js, manifest.webmanifest       PWA (inštalácia na plochu, push)
 supabase/migrations/…_init.sql    celá databáza: tabuľky, RLS, uzávierka stravy
 supabase/functions/push/          odosielanie push notifikácií
+scripts/setup-push.sh             jednorazové nastavenie push
 ```
 
 ---
@@ -53,23 +54,24 @@ Rolu si pri registrácii nikto nevie nastaviť sám. Databáza ju ignoruje a men
 
 ## 4. Push notifikácie (dajú sa zapnúť aj neskôr)
 
-Bez tohto kroku platforma funguje, len bez upozornení.
+Zvonček v platforme funguje hneď po spustení migrácií. Push (upozornenie na uzamknutom telefóne) treba nastaviť raz:
 
-1. Vygeneruj kľúče príkazom `npx web-push generate-vapid-keys` a **Public Key** vlož do `config.js` (`VAPID_PUBLIC_KEY`).
-2. Nasaď funkciu. `REF` je ID projektu z URL `https://REF.supabase.co`.
+1. Migrácia `…_notifikacie.sql` už beží (krok 1). Vytvorí upozornenia, ktoré generuje samotná databáza pri novom oznamu, správe alebo odhlásení.
+2. Prihlás sa do Supabase CLI a spusti skript. `REF` je ID projektu z URL `https://REF.supabase.co`.
    ```bash
    npx supabase login
-   npx supabase secrets set --project-ref REF \
-     VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... \
-     VAPID_SUBJECT=mailto:tvoj@email.sk WEBHOOK_SECRET=nejaky-dlhy-nahodny-retazec
-   npx supabase functions deploy push --project-ref REF --no-verify-jwt
+   ./scripts/setup-push.sh REF tvoj@email.sk
    ```
-3. V **Database → Webhooks** vytvor 3 webhooky, pre tabuľky `posts`, `messages` a `absences`. Každý má event **Insert**, typ **HTTP Request**, metódu **POST**, URL `https://REF.supabase.co/functions/v1/push` a HTTP header `x-webhook-secret` s hodnotou `WEBHOOK_SECRET`.
-4. V platforme ťukni na **Zapnúť upozornenia**. Na iPhone treba iOS 16.4 alebo novší. V Safari daj **Zdieľať → Pridať na plochu**, otvor platformu z plochy a až potom zapni upozornenia.
+   Skript vygeneruje VAPID kľúče, nahrá ich a tajný reťazec do Supabase, nasadí funkciu `push` a zapíše verejný kľúč do `config.js`.
+3. Skript na konci vypíše jeden SQL príkaz. Vlož ho do **SQL Editora** a spusti. Tým databáza zistí, kam má push posielať.
+4. Zmenený `config.js` nahraj na GitHub.
+5. V platforme otvor **Menu → Nastavenie upozornení**, ťukni na **Zapnúť na tomto zariadení** a potvrď povolenie. Tlačidlom **Poslať skúšobné upozornenie** overíš, že to funguje. Na iPhone treba iOS 16.4 alebo novší, stránku pridať na plochu a zapnúť upozornenia až z plochy.
+
+Ako to ide: nová správa, oznam alebo odhlásenie → trigger vloží riadok do `notifications` (to je zvonček) → ďalší trigger zavolá funkciu `push` → tá pošle upozornenie na zariadenia adresáta. Každý si v nastaveniach vie druhy upozornení vypnúť.
 
 Kto dostane upozornenie:
 - nový oznam: rodičia triedy, alebo celej MŠ
-- nová správa: rodičia dieťaťa a učiteľky jeho triedy
+- nová správa: rodičia dieťaťa a učiteľky jeho triedy (okrem odosielateľa)
 - odhlásenie dieťaťa: učiteľky triedy
 
 ---
@@ -102,7 +104,7 @@ Potom rodič vyplní údaje v karte dieťaťa. Učiteľky a vedenie ich vidia pr
 
 - **Platby.** Okno pre rodičov je pripravené a prázdne. Doplnia sa platby škôlka, kuchyňa, ZRPŠ a ďalšie po dohode.
 - **Fotogaléria** a **offline režim** (service worker zatiaľ obsluhuje len push).
-- **Zabudnuté heslo** funguje až s nastaveným SMTP (Authentication → Emails → SMTP Settings). Dovtedy heslo resetuješ v **Authentication → Users**. Prihlásený používateľ si heslo zmení sám cez tlačidlo **Heslo** hore.
+- **Zabudnuté heslo** funguje až s nastaveným SMTP (Authentication → Emails → SMTP Settings). Dovtedy heslo resetuješ v **Authentication → Users**. Prihlásený používateľ si heslo zmení sám cez **Menu → Zmeniť heslo** hore.
 
 ## GDPR pred spustením
 

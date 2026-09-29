@@ -1,7 +1,7 @@
 // Service worker: iba push notifikácie. Offline cache zatiaľ netreba.
 self.addEventListener('push', e => {
   const d = e.data?.json() ?? {}
-  e.waitUntil(self.registration.showNotification(d.title || 'Ďatelinka', { body: d.body, icon: 'icon-192.png', badge: 'icon-192.png' }))
+  e.waitUntil(self.registration.showNotification(d.title || 'Ďatelinka', { body: d.body, icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag }))
 })
 self.addEventListener('notificationclick', e => {
   e.notification.close()
