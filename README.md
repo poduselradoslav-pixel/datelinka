@@ -17,13 +17,13 @@ supabase/functions/push/          odosielanie push notifikácií
 ## 1. Supabase (cca 15 min)
 
 1. **Nový projekt.** Región zvoľ **Central EU (Frankfurt)** kvôli GDPR, dáta zostanú v EÚ.
-2. **SQL Editor.** Postupne spusti oba súbory zo `supabase/migrations/` v poradí podľa názvu (Run). Vytvoria tabuľky, pravidlá prístupu, registráciu so schvaľovaním a triedy Kvietky, Slniečka a Lienky.
+2. **SQL Editor.** Postupne spusti všetky súbory zo `supabase/migrations/` v poradí podľa názvu (Run). Vytvoria tabuľky, pravidlá prístupu, registráciu so schvaľovaním, realtime a triedy Kvietky, Slniečka a Lienky.
 3. **Authentication → Sign In / Providers → Email.** Nechaj zapnuté **Allow new users to sign up** a vypni **Confirm email**. Registrácia tak nepotrebuje e-maily. Neschválený účet nevidí nič, kým ho riaditeľka neschváli.
 4. **Prvý admin.** Zaregistruj sa v platforme a v SQL Editore spusti:
    ```sql
    update profiles set role = 'admin', approved = true where email = 'tvoj@email.sk';
    ```
-5. **SMTP** zatiaľ netreba. Bude potrebné až pre „zabudnuté heslo“, ktoré ešte nie je hotové. Dovtedy heslo resetuješ v **Authentication → Users**.
+5. **SMTP** zatiaľ netreba. Bude potrebné pre „zabudnuté heslo“ (odkaz na nové heslo príde e-mailom). Dovtedy heslo resetuješ v **Authentication → Users**.
 6. **Authentication → URL Configuration.** Ako Site URL nastav adresu z GitHub Pages (krok 2), napríklad `https://tvoje-meno.github.io/datelinka/`. Tú istú adresu, prípadne aj `http://localhost:8000`, pridaj do Redirect URLs.
 7. **Project Settings → API Keys.** Skopíruj Project URL a **Publishable key** do `config.js`. Secret alebo service_role kľúč do repozitára nikdy nedávaj.
 
@@ -47,10 +47,7 @@ Všetko robí riaditeľka v platforme cez **Vedenie → Používatelia**:
 1. **Pridá deti** (meno a trieda).
 2. Rodič sa **zaregistruje sám**: zadá meno, e-mail, heslo a meno dieťaťa. Kým ho nikto neschváli, vidí len „Účet čaká na schválenie“.
 3. Riaditeľka vidí čakajúcich aj s **navrhnutou zhodou**. Deti, ktorých meno sa zhoduje s uvedeným menom, sú predvybraté (porovnáva sa bez diakritiky, podľa mena alebo priezviska). Skontroluje ich, doplní rolu (rodič, učiteľka, kuchyňa) a klikne **Schváliť**.
-4. Učiteľky sa registrujú tiež. Pri schválení im riaditeľka dá rolu **Učiteľka**. Priradenie učiteľky k triede je zatiaľ v **Table Editor → class_teachers** (`class_id` + `teacher_id`), prípadne SQL:
-   ```sql
-   insert into class_teachers select (select id from classes where name = 'Lienky'), id from profiles where email = 'ucitelka@example.sk';
-   ```
+4. Učiteľky sa registrujú tiež. Pri schválení im riaditeľka dá rolu **Učiteľka** a v **Vedenie → Personál** im vyberie triedu.
 
 Rolu si pri registrácii nikto nevie nastaviť sám. Databáza ju ignoruje a mení ju len admin.
 
@@ -88,18 +85,24 @@ Kto dostane upozornenie:
 
 | Rola | Vidí | Môže |
 |---|---|---|
-| Rodič | svoje deti, oznamy ich tried a celej MŠ, mená učiteliek | odhlásiť dieťa, písať správy, potvrdiť oznam, hlasovať, pridať osobu na vyzdvihnutie |
-| Učiteľka | všetky deti a triedy (kvôli záskokom) | dochádzka, oznamy, správy, potvrdenie splnomocnení |
-| Riaditeľka (`admin`) | všetko | navyše suplovanie, výkaz dochádzky (CSV) a jedálny lístok |
+| Rodič | svoje deti, oznamy ich tried a celej MŠ, mená učiteliek | odhlásiť dieťa, písať správy, potvrdiť oznam, hlasovať, pridať osobu na vyzdvihnutie a núdzové kontakty |
+| Učiteľka | všetky deti a triedy (kvôli záskokom) | dochádzka aj spätne, odhlásenie za rodiča, oznamy (úprava a mazanie vlastných), správy, potvrdenie splnomocnení |
+| Riaditeľka (`admin`) | všetko | navyše schvaľovanie, zamietnutie a deaktivácia účtov, zmena rolí, správa detí a rodičov, triedy učiteliek, suplovanie, výkaz dochádzky (CSV za zvolený mesiac) a jedálny lístok |
 | Kuchyňa | len počty porcií podľa triedy, bez mien detí | jedálny lístok |
+
+## Zdravotné údaje (vypnuté)
+
+Formulár pre alergie, ochorenia, lieky a diéty je hotový, ale **vypnutý**. Kým je vypnutý, databáza tieto údaje nevydá ani neprijme, aj keby ich klient poslal. Keď bude GDPR vyriešené (zmluva a informovanie rodičov), zapni ho v SQL Editore:
+```sql
+update settings set value = true where key = 'health_enabled';
+```
+Potom rodič vyplní údaje v karte dieťaťa. Učiteľky a vedenie ich vidia pri dieťati, kuchyňa vidí len počet diét v triede bez mien.
 
 ## Zámerne vynechané (ďalšie kroky)
 
-- **Zdravotné údaje** (alergie, choroby, diéty) sú v platforme zamknuté s označením „Podlieha GDPR“ a databáza ich neukladá. Sprístupnia sa až po zmluve o spracúvaní so škôlkou alebo mestom.
-- **Zabudnuté heslo** (potrebuje SMTP), **zamietnutie registrácie** (zatiaľ zmazať v Authentication → Users) a **priradenie učiteliek k triedam** v platforme.
-- **Platby**, **fotogaléria** a **núdzové kontakty.**
-- **Realtime.** Dáta sa obnovia po každej akcii a pri návrate do platformy. Pri 3 triedach to stačí.
-- **Offline režim.** Service worker zatiaľ obsluhuje len push.
+- **Platby.** Okno pre rodičov je pripravené a prázdne. Doplnia sa platby škôlka, kuchyňa, ZRPŠ a ďalšie po dohode.
+- **Fotogaléria** a **offline režim** (service worker zatiaľ obsluhuje len push).
+- **Zabudnuté heslo** funguje až s nastaveným SMTP (Authentication → Emails → SMTP Settings). Dovtedy heslo resetuješ v **Authentication → Users**. Prihlásený používateľ si heslo zmení sám cez tlačidlo **Heslo** hore.
 
 ## GDPR pred spustením
 

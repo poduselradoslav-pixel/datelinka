@@ -50,3 +50,5 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 #toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;z-index:9}
 #toast.on{opacity:1}
+#install{max-width:398px;margin:12px auto 0;background:var(--gs);color:#1F4D28;display:flex;gap:10px;align-items:center}
+#install[hidden]{display:none}

@@ -3,6 +3,7 @@
   "short_name": "Ďatelinka",
   "description": "Platforma MŠ Ďatelinka Zvolen",
   "lang": "sk",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
