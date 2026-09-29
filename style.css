@@ -71,3 +71,5 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
 .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--pill);font-weight:700;font-size:13px;flex-shrink:0}
 .dot.ok{background:var(--g);color:#fff}.dot.cur{border:2px solid var(--g);color:var(--g)}
 .dot .ic{width:16px;height:16px}
+.alg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 16px;margin-top:10px;font-size:14px}
+.alg b{display:inline-block;min-width:22px;color:var(--g)}

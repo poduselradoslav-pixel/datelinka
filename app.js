@@ -176,12 +176,18 @@ V.wizard = () => {
  ${cur < 0 ? `<div class="card">Ďakujeme, škôlka má všetko potrebné.${others ? ` Ešte treba doplniť údaje pri ďalšom dieťati.` : ''}<button class="btn" data-a="go" data-v="board">Pokračovať</button></div>`
    : `<div class="card"><div class="lbl">Krok ${cur + 1} z 3</div>${form}</div><button class="btn ghost" data-a="go" data-v="board">Neskôr</button>`}`
 }
+// Alergény podľa nariadenia EÚ 1169/2011 (čísla v jedálnom lístku)
+const ALERG = ['Obilniny obsahujúce lepok', 'Kôrovce', 'Vajcia', 'Ryby', 'Arašidy', 'Sójové zrná', 'Mlieko', 'Orechy', 'Zeler', 'Horčica', 'Sezamové semená', 'Oxid siričitý a siričitany', 'Vlčí bôb (lupina)', 'Mäkkýše']
+const legend = open => `<details class="card" ${open ? 'open' : ''}><summary style="cursor:pointer;font-weight:700">Alergény: čo znamenajú čísla</summary><div class="alg">${ALERG.map((a, i) => `<div><b>${i + 1}</b> ${a}</div>`).join('')}</div></details>`
 const pref = k => S.d.prefs?.[0]?.[k] ?? true
 const unseen = () => S.d.notes?.filter(n => !n.read_at).length || 0
 const THEMES = [['auto', 'Auto'], ['light', 'Svetlý'], ['dark', 'Tmavý']]
 V.settings = () => `<header class="row"><button class="btn ghost" aria-label="Späť" data-a="go" data-v="${DEF[S.role]}">${ic('back')}</button><h1 style="font-size:22px">Upozornenia</h1></header>
  <div class="card"><div class="lbl">O čom chcem vedieť</div>
-  ${[['posts', 'Nové oznamy', S.role == 'parent'], ['reminders', 'Ranná pripomienka odhlásenia (7:30)', S.role == 'parent'], ['messages', 'Nové správy', S.role != 'kitchen'], ['absences', 'Odhlásenia detí', S.role == 'teacher' || S.role == 'admin'], ['pickups', 'Nové osoby na vyzdvihnutie', S.role == 'teacher' || S.role == 'admin']].filter(x => x[2]).map(([k, l]) => `<label class="row"><input type="checkbox" data-c="pref" data-k="${k}" ${pref(k) ? 'checked' : ''}><span>${l}</span></label>`).join('')}
+  ${[['posts', 'Nové oznamy', S.role == 'parent'], ['reminders', 'Ranná pripomienka odhlásenia (7:30)', S.role == 'parent'], ['messages', 'Nové správy', S.role != 'kitchen'],
+    ['absences', S.role == 'parent' ? 'Odhlásenia a neprítomnosť dieťaťa' : 'Odhlásenia detí', S.role != 'kitchen'],
+    ['pickups', S.role == 'parent' ? 'Osoby na vyzdvihnutie (potvrdenie)' : 'Nové osoby na vyzdvihnutie', S.role != 'kitchen'],
+    ['substitutes', 'Záskoky', S.role == 'teacher' || S.role == 'admin'], ['accounts', 'Nové registrácie', S.role == 'admin']].filter(x => x[2]).map(([k, l]) => `<label class="row"><input type="checkbox" data-c="pref" data-k="${k}" ${pref(k) ? 'checked' : ''}><span>${l}</span></label>`).join('')}
   <div class="mute">Vypnutý druh sa nezobrazí ani v zvončeku, ani ako push.</div></div>
  <div class="card"><div class="lbl">Push do zariadenia</div>
   <label class="row"><input type="checkbox" data-c="pref" data-k="push" ${pref('push') ? 'checked' : ''}><span>Posielať push upozornenia</span></label>
@@ -257,7 +263,7 @@ V.cal = () => {
   const c = S.role == 'parent' ? myKid()?.class_id : S.cls, m = S.d.menu.find(x => x.day == NEXT)
   const ev = S.d.posts.filter(p => p.event_date >= TODAY && (p.type == 'udalost' || p.type == 'prineste') && (!p.class_id || p.class_id == c)).sort((a, b) => a.event_date < b.event_date ? -1 : 1)
   return `${adminTabs()}<h1 style="font-size:26px">Kalendár</h1>${ev.map(e => `<div class="card row" style="flex-direction:row;gap:14px"><div style="width:56px;text-align:center"><div class="mute">${DN[dt(e.event_date).getDay()]}</div><div class="disp" style="font-size:18px">${dt(e.event_date).getDate()}. ${dt(e.event_date).getMonth() + 1}.</div></div><div><b>${esc(e.title)}</b><div class="mute">${TYPES[e.type]} · ${e.class_id ? esc(cls(e.class_id).name) : 'Celá MŠ'}</div></div></div>`).join('') || '<p class="mute">Žiadne udalosti.</p>'}
- <h2 style="font-size:20px;font-weight:600">Jedálniček · ${sk(NEXT)}</h2>${m ? `<div class="card list" style="padding-block:4px">${[['Desiata', m.snack], ['Obed', m.lunch], ['Olovrant', m.afternoon]].map(([l, x]) => `<div class="row"><b class="mute" style="width:78px">${l}</b><span class="grow">${esc(x)}</span></div>`).join('')}</div><div class="mute">Čísla = alergény (1–14).</div>` : '<p class="mute">Jedálniček ešte nie je zverejnený.</p>'}`
+ <h2 style="font-size:20px;font-weight:600">Jedálniček · ${sk(NEXT)}</h2>${m ? `<div class="card list" style="padding-block:4px">${[['Desiata', m.snack], ['Obed', m.lunch], ['Olovrant', m.afternoon]].map(([l, x]) => `<div class="row"><b class="mute" style="width:78px">${l}</b><span class="grow">${esc(x)}</span></div>`).join('')}</div>${legend(false)}` : '<p class="mute">Jedálniček ešte nie je zverejnený.</p>'}`
 }
 
 V.msg = () => {
@@ -371,7 +377,7 @@ V.kitchen = () => {
  <form class="card" data-a="saveMenu" style="overflow-x:auto"><div class="row sp" style="flex-wrap:wrap"><div class="lbl">Jedálny lístok · týždeň od ${sk(wk[0])}</div><div class="chips">${['Tento týždeň', 'Budúci týždeň'].map((l, i) => `<button type="button" class="chip ${S.week == i ? 'on' : ''}" data-a="week" data-i="${i}">${l}</button>`).join('')}</div></div>
  <table><tr><th>Deň</th><th>Desiata</th><th>Obed</th><th>Olovrant</th></tr>${wk.map(d => { const m = S.d.menu.find(x => x.day == d) ?? {}
     return `<tr><td><b>${sk(d)}</b></td>${['snack', 'lunch', 'afternoon'].map(k => `<td><input name="${d}|${k}" aria-label="${sk(d)} ${k}" value="${esc(m[k])}"></td>`).join('')}</tr>` }).join('')}</table>
- <div class="row sp"><span class="mute">Alergény píšte do zátvorky, napr. (1, 7).</span><button class="btn">Uložiť a zverejniť</button></div></form>`
+ <div class="row sp"><span class="mute">Alergény píšte do zátvorky, napr. (1, 7).</span><button class="btn">Uložiť a zverejniť</button></div></form>${legend(true)}`
 }
 
 // ---------- akcie ----------
@@ -383,10 +389,15 @@ const A = {
   note: async d => {
     const n = byId(S.d.notes, d.id); if (!n) return
     if (!n.read_at) await q(sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id))
-    if (n.kind == 'message' && n.child_id) { if (S.role == 'parent') S.child = n.child_id; else S.thread = n.child_id; S.v = 'msg' }
-    else if ((n.kind == 'absence' || n.kind == 'pickup') && n.child_id) { S.cls = byId(S.d.children, n.child_id)?.class_id ?? S.cls; S.v = 'class' }
+    const parent = S.role == 'parent'
+    if (n.kind == 'message' && n.child_id) { if (parent) S.child = n.child_id; else S.thread = n.child_id; S.v = 'msg' }
+    else if ((n.kind == 'absence' || n.kind == 'pickup') && n.child_id) {
+      if (parent) { S.child = n.child_id; S.v = n.view || 'board' } else { S.cls = byId(S.d.children, n.child_id)?.class_id ?? S.cls; S.v = 'class' }
+    }
     else if (n.kind == 'reminder') { S.child = n.child_id ?? S.child; S.v = 'absence' }
-    else if (n.kind == 'post') S.v = S.role == 'parent' ? 'board' : 'posts'
+    else if (n.kind == 'account') S.v = 'users'
+    else if (n.kind == 'substitute') S.v = S.role == 'admin' ? 'staff' : 'class'
+    else if (n.kind == 'post') S.v = parent ? n.view || 'board' : 'posts'
     scrollTo(0, 0)
   },
   notesRead: async () => { await q(sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', S.me.id).is('read_at', null)) },
