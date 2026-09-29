@@ -85,6 +85,8 @@ Kto dostane upozornenie:
 - **Ďalšie dieťa:** rodič ho žiada v karte dieťaťa, riaditeľka potvrdí v Používateľoch.
 - **2FA pre admina:** Menu → Dvojfaktorové overenie (Google Authenticator a pod.). Strata telefónu: v Supabase **Authentication → Users** zmaž faktor daného účtu.
 - **Captcha (nepovinné):** Cloudflare Turnstile → site key do `config.js` (`TURNSTILE_SITE_KEY`), secret key do Supabase **Authentication → Attack Protection**.
+- **Ďalšie dieťa (migrácia `…_dalsie_dieta.sql`):** po potvrdení sa prevezmú zákonní zástupcovia, osoby na vyzdvihnutie a núdzové kontakty z prvého dieťaťa.
+- **Odovzdanie vedenia:** Používatelia → Odovzdať vedenie. Riaditeľka s vlastnou triedou má prepínač Moja trieda / Správa škôlky.
 - Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
 
 ## Pravidlá zo školského poriadku
