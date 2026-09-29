@@ -53,8 +53,10 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
 #toast.on{opacity:1}
 #install{max-width:398px;margin:12px auto 0;background:var(--gs);color:var(--gd);display:flex;gap:10px;align-items:center}
 #install[hidden]{display:none}
-#bar .bi{display:flex;align-items:center;gap:10px;width:100%;max-width:1100px;margin:0 auto}
-#bar .bell{position:relative;display:flex;padding:5px 8px}
+#bar .bi{display:flex;align-items:center;gap:10px;width:100%;max-width:398px;margin:0 auto}
+#bar.wide .bi{max-width:1068px}
+#bar .bell{position:relative;display:flex;align-items:center}
+#bar .bell .ic{width:16px;height:16px}
 #bar .bell i{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#E8833A;color:#fff;font:700 11px/18px Figtree,sans-serif;text-align:center}
 .pop{position:fixed;top:48px;left:8px;right:8px;max-width:360px;margin-left:auto;max-height:calc(100vh - 64px);overflow:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 28px #0003;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:14px;text-align:left}
 #bar .pop button{border:0;color:var(--ink);text-align:left;padding:10px 8px;border-radius:10px;font-size:14px}

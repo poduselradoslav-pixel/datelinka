@@ -501,6 +501,7 @@ function render() {
   const view = S.recovery ? 'password' : S.me.approved || S.v == 'password' ? S.v : 'pending'
   const wide = S.role == 'admin' && !['posts', 'class', 'msg', 'cal', 'absence', 'password', 'settings'].includes(view) || S.role == 'kitchen' && !['password', 'settings'].includes(view)
   app.className = wide ? 'wide' : ''
+  bar.className = wide ? 'wide' : ''
   app.innerHTML = V[view]()
   if (key && val && f.type != 'checkbox') {
     const el = [...app.querySelectorAll(`[name="${key}"],[data-c="${key}"],[data-d="${key}"]`)]
