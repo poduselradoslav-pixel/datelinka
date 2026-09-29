@@ -181,7 +181,7 @@ const unseen = () => S.d.notes?.filter(n => !n.read_at).length || 0
 const THEMES = [['auto', 'Auto'], ['light', 'Svetlý'], ['dark', 'Tmavý']]
 V.settings = () => `<header class="row"><button class="btn ghost" aria-label="Späť" data-a="go" data-v="${DEF[S.role]}">${ic('back')}</button><h1 style="font-size:22px">Upozornenia</h1></header>
  <div class="card"><div class="lbl">O čom chcem vedieť</div>
-  ${[['posts', 'Nové oznamy', S.role == 'parent'], ['reminders', 'Ranná pripomienka odhlásenia (7:30)', S.role == 'parent'], ['messages', 'Nové správy', S.role != 'kitchen'], ['absences', 'Odhlásenia detí', S.role == 'teacher' || S.role == 'admin']].filter(x => x[2]).map(([k, l]) => `<label class="row"><input type="checkbox" data-c="pref" data-k="${k}" ${pref(k) ? 'checked' : ''}><span>${l}</span></label>`).join('')}
+  ${[['posts', 'Nové oznamy', S.role == 'parent'], ['reminders', 'Ranná pripomienka odhlásenia (7:30)', S.role == 'parent'], ['messages', 'Nové správy', S.role != 'kitchen'], ['absences', 'Odhlásenia detí', S.role == 'teacher' || S.role == 'admin'], ['pickups', 'Nové osoby na vyzdvihnutie', S.role == 'teacher' || S.role == 'admin']].filter(x => x[2]).map(([k, l]) => `<label class="row"><input type="checkbox" data-c="pref" data-k="${k}" ${pref(k) ? 'checked' : ''}><span>${l}</span></label>`).join('')}
   <div class="mute">Vypnutý druh sa nezobrazí ani v zvončeku, ani ako push.</div></div>
  <div class="card"><div class="lbl">Push do zariadenia</div>
   <label class="row"><input type="checkbox" data-c="pref" data-k="push" ${pref('push') ? 'checked' : ''}><span>Posielať push upozornenia</span></label>
@@ -384,7 +384,7 @@ const A = {
     const n = byId(S.d.notes, d.id); if (!n) return
     if (!n.read_at) await q(sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id))
     if (n.kind == 'message' && n.child_id) { if (S.role == 'parent') S.child = n.child_id; else S.thread = n.child_id; S.v = 'msg' }
-    else if (n.kind == 'absence' && n.child_id) { S.cls = byId(S.d.children, n.child_id)?.class_id ?? S.cls; S.v = 'class' }
+    else if ((n.kind == 'absence' || n.kind == 'pickup') && n.child_id) { S.cls = byId(S.d.children, n.child_id)?.class_id ?? S.cls; S.v = 'class' }
     else if (n.kind == 'reminder') { S.child = n.child_id ?? S.child; S.v = 'absence' }
     else if (n.kind == 'post') S.v = S.role == 'parent' ? 'board' : 'posts'
     scrollTo(0, 0)
