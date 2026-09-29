@@ -81,3 +81,8 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
   .atabs .chip{flex-shrink:0}
   #app.wide h1{font-size:22px!important}
 }
+.printonly{display:none}
+@media print{
+  #bar,#nav,#install,#toast,.noprint{display:none!important}
+  body{background:#fff;color:#000}.card{border:0;padding:0}#app,#app.wide{max-width:none;padding:0}.printonly{display:block}
+}

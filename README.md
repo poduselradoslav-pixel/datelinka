@@ -78,6 +78,15 @@ Kto dostane upozornenie:
 
 ---
 
+## 5. Správa školy (migrácia `…_sprava_skoly.sql`)
+
+- **Dni voľna** (sviatky, riaditeľské voľno): Kalendár (admin) → blok Dni voľna. V tieto dni neplatí odhlasovanie, výkaz ani pripomienka. Dá sa pridať aj SQL: `insert into closed_days(day, note) values ('2026-12-24','Štedrý deň');`
+- **Nový školský rok:** Používatelia → presun tried a hromadný import detí.
+- **Ďalšie dieťa:** rodič ho žiada v karte dieťaťa, riaditeľka potvrdí v Používateľoch.
+- **2FA pre admina:** Menu → Dvojfaktorové overenie (Google Authenticator a pod.). Strata telefónu: v Supabase **Authentication → Users** zmaž faktor daného účtu.
+- **Captcha (nepovinné):** Cloudflare Turnstile → site key do `config.js` (`TURNSTILE_SITE_KEY`), secret key do Supabase **Authentication → Attack Protection**.
+- Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
+
 ## Pravidlá zo školského poriadku
 
 - **Strava sa odhlasuje do 8:00 v deň neprítomnosti.** Uzávierku stráži databáza v triggeri `absences_before_insert`, takže ju nedá obísť ani upravený klient. Pole `meals_from` hovorí, od ktorého dňa je strava odhlásená. Z neho sa počítajú porcie pre kuchyňu (`meal_counts`).
