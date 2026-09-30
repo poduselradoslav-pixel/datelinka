@@ -152,3 +152,10 @@ Trieda: v pracovné dni mimo 6:30–17:00, cez víkend a v dňoch zatvorenia uč
 ## Realtime – oprava
 Klient odoberal zmeny aj z tabuľky `notification_prefs`, ktorá nie je v publikácii `supabase_realtime`. Supabase vtedy odmietne celý kanál („Unable to subscribe to changes…“), takže nechodilo nič. Tabuľka je z odberu vyradená; do `TABLES` v app.js dávať len tabuľky z publikácie.
 Správy vedenia: zoznam ukazuje len rozbehnuté konverzácie, novú začne riaditeľka vyhľadaním dieťaťa.
+
+## Migrácia 23 – záskok od kuchyne a výpomoci, nahlásenie neprítomnosti
+`20260930000023_zaskok_personal.sql`:
+- nová rola **Výpomoc** (`helper`): bežne vidí len oznamy celej MŠ a svoju neprítomnosť, v deň záskoku triedu ako učiteľka,
+- kuchyňa a výpomoc môžu byť záskokom (Personál → výber záskoku); v deň záskoku majú lištu Trieda / Správy,
+- učiteľka, kuchyňa a výpomoc si nahlásia neprítomnosť (Menu → Nahlásiť moju neprítomnosť); riaditeľke príde urgentné upozornenie, neprítomnej sa na ten deň vypne trieda a nechodia jej správy triedy.
+Migrácia sa dá spustiť aj opakovane.
