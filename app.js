@@ -117,7 +117,7 @@ function refreshKeys(...keys) {
 }
 const TABLES = { messages: ['msgs'], posts: ['posts'], absences: ['absences', 'meals', 'diets'], attendance: ['attendance'], post_reads: ['reads'], poll_votes: ['votes'],
   children: ['children', 'inactive', 'meals', 'diets'], guardians: ['guardians'], classes: ['classes', 'meals'], class_teachers: ['ct'], pickups: ['pickups'], consents: ['consents'],
-  emergency_contacts: ['emergency'], child_health: ['health', 'diets'], staff_absences: ['staff'], menu: ['menu'], settings: ['settings', 'diets'], thread_reads: ['treads'],
+  emergency_contacts: ['emergency'], child_health: ['health', 'diets'], staff_absences: ['staff', 'children', 'guardians', 'pickups', 'emergency', 'health', 'attendance', 'absences', 'msgs', 'treads'],   // záskok mení, ktoré deti učiteľka vidí menu: ['menu'], settings: ['settings', 'diets'], thread_reads: ['treads'],
   closed_days: ['closed', 'meals'], child_requests: ['requests'] }   // len tabuľky z publikácie supabase_realtime, inak Supabase odmietne celý kanál
 
 // ---------- vyhľadávanie ----------
@@ -550,7 +550,7 @@ const A = {
     }
     else if (n.kind == 'reminder') { S.child = n.child_id ?? S.child; S.v = 'absence' }
     else if (n.kind == 'account') S.v = 'users'
-    else if (n.kind == 'substitute') S.v = S.role == 'admin' ? 'staff' : 'class'
+    else if (n.kind == 'substitute') { S.v = S.role == 'admin' ? 'staff' : 'class'; const z = S.d.staff.find(x => x.substitute_id == S.me.id && x.day == TODAY); if (z && S.role != 'admin') { S.cls = classOf(z.teacher_id)?.id ?? S.cls; S.day = TODAY } }
     else if (n.kind == 'post' || n.kind == 'urgent') S.v = parent ? n.view || 'board' : 'posts'
     scrollTo(0, 0)
   },
