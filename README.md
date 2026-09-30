@@ -139,3 +139,12 @@ Potom rodič vyplní údaje v karte dieťaťa. Učiteľky a vedenie ich vidia pr
 ## Upozornenia a realtime (aktualizácia)
 - Po prihlásení platforma sama ponúkne zapnutie upozornení (tlačidlo v hornom pruhu; prehliadač povolenie povolí vyvolať len ťuknutím). Ak je povolenie už dané, zariadenie sa zaregistruje samo a potichu.
 - Realtime: pri výpadku spojenia sa kanál obnoví a dotiahnu sa zmeškané zmeny; tab na popredí si navyše každých 45 s obnoví dáta (nie počas písania). O polnoci sa stránka pri návrate načíta znova.
+
+## Migrácia 21 – opravy z auditu
+`20260929000021_opravy_auditu.sql`: záskok dostáva správy triedy, upozornenia na správy majú titulok podľa príjemcu (rodič „Učiteľka/Riaditeľka · dieťa“, personál „Správa · dieťa“), upozornenie na odhlásenie otvorí rodičovi správny pohľad, pri zmene roly učiteľky sa zruší jej priradenie k triede.
+Pridať dieťa je samostatná obrazovka (Dieťa → + Pridať dieťa).
+
+## Migrácia 22 – čas sledovania dochádzky
+`20260929000022_dochadzka_cas.sql`: upozornenie rodičom „dieťa dnes nie je v škôlke“ sa posiela len v pracovné dni 6:30–17:00 a nie v dňoch zatvorenia. Zápis dochádzky mimo toho ostáva možný (opravy), len nikoho neruší.
+
+Trieda: v pracovné dni mimo 6:30–17:00, cez víkend a v dňoch zatvorenia učiteľka namiesto prítomných/chýbajúcich vidí „Mimo prevádzky“ (staršie dni sa dajú opraviť cez výber dňa).
