@@ -128,7 +128,7 @@ const kidsIn = c => S.d.children.filter(k => k.class_id == c)
 const teachersOf = c => S.d.ct.filter(x => x.class_id == c).map(x => x.teacher_id)
 const classOf = t => cls(S.d.ct.find(x => x.teacher_id == t)?.class_id)
 const absOn = (k, d) => S.d.absences.find(a => a.child_id == k && a.date_from <= d && a.date_to >= d)
-const status = (k, d) => { const a = absOn(k, d); return a ? { s: 'abs', a } : S.d.attendance.some(x => x.child_id == k && x.day == d) ? { s: 'miss' } : { s: 'ok' } }
+const status = (k, d) => { const a = absOn(k, d); return a ? { s: 'abs', a } : (r => r ? { s: r.kind == 'present' ? 'ok' : 'miss' } : { s: 'new' })(S.d.attendance.find(x => x.child_id == k && x.day == d)) }
 const myKid = () => byId(S.d.children, S.child)
 const parentsIn = c => [...new Set(S.d.guardians.filter(g => { const k = byId(S.d.children, g.child_id); return k && (!c || k.class_id == c) }).map(g => g.parent_id))]
 const readBy = p => S.d.reads.filter(r => r.post_id == p.id).map(r => r.user_id)
@@ -408,24 +408,27 @@ V.kid = () => {
 
 V.class = () => {
   const c = cls(S.cls), rows = kidsIn(S.cls).map(k => ({ k, ...status(k.id, S.day) })), n = s => rows.filter(r => r.s == s).length
-  const subs = S.d.staff.filter(x => x.substitute_id == S.me.id && x.day == S.day)
+  const subs = S.d.staff.filter(x => x.substitute_id == S.me.id && x.day == S.day), sel = rows.find(r => r.k.id == S.sel)
   const tile = (v, l, o) => `<div class="card" style="gap:2px;${o ? 'background:var(--o);border-color:var(--ob);color:var(--ot)' : ''}"><div class="disp" style="font-size:26px">${v}</div><div style="font-size:12px;font-weight:600">${l}</div></div>`
+  const late = S.day == TODAY && !mealOpen(TODAY)
+  const panel = r => { if (!r) return ''; const k = r.k, ps = S.d.pickups.filter(p => p.child_id == k.id), es = S.d.emergency.filter(e => e.child_id == k.id), h = S.d.health.find(x => x.child_id == k.id)
+    const hasHealth = h && (h.allergies || h.chronic || h.medication || h.diet), b = (a, t, cl = 'btn out') => `<button class="${cl}" data-a="${a}" data-id="${k.id}" ${a == 'att' ? `data-k="${t[0]}"` : ''}>${a == 'att' ? t[1] : t}</button>`
+    return `<div class="card"><div class="row sp"><div><b style="font-size:18px">${esc(k.name)}</b>${hasHealth ? ' <span class="pill o">zdravie</span>' : ''}
+   ${r.s == 'abs' ? `<div class="mute">Odhlásený: ${esc(r.a.reason)} · do ${sk(r.a.date_to)}${r.a.note ? ' · ' + esc(r.a.note) : ''}</div>` : r.s == 'miss' ? '<div class="mute">Chýba bez odhlásenia, rodičia sú upozornení.</div>' : r.s == 'ok' ? '<div class="mute">Prítomný (potvrdené)</div>' : '<div class="mute">Zatiaľ nespracované</div>'}</div><button class="btn ghost" data-a="sel" data-id="">Zavrieť</button></div>
+   <div class="chips">${r.s != 'ok' && r.s != 'abs' ? b('att', ['present', 'Je prítomný'], 'btn') : ''}${r.s == 'ok' || r.s == 'miss' ? b('att', ['', 'Zrušiť potvrdenie']) : ''}${r.s == 'new' ? b('att', ['miss', 'Nie je v škôlke (upozorní rodičov)']) : ''}
+   <button class="btn out" data-a="thread" data-id="${k.id}" data-go="msg">Ozvať sa rodičom</button>${r.s != 'abs' ? b('absFor', 'Zapísať odhlásenie (volal rodič)') : ''}</div>
+   ${ps.filter(p => p.authorized).length ? `<div class="mute" style="color:var(--bt)">môže vyzdvihnúť aj: ${ps.filter(p => p.authorized).map(p => esc(p.name)).join(', ')}</div>` : ''}
+   ${ps.filter(p => !p.authorized).map(p => `<button class="btn ghost" style="font-size:13px;align-self:flex-start" data-a="authorize" data-id="${p.id}">Potvrdiť splnomocnenie: ${esc(p.name)}</button>`).join('')}
+   ${es.map((e, i) => `<div>${i + 1}. ${esc(e.name)} <span class="mute">${esc(e.relation)}</span> · <a href="${esc(tel(e.phone))}">${esc(phone(e.phone))}</a></div>`).join('') || '<div class="mute">Rodič nezadal núdzové kontakty.</div>'}
+   ${hasHealth ? [['Alergie', h.allergies], ['Ochorenia', h.chronic], ['Lieky', h.medication], ['Diéta', h.diet]].filter(x => x[1]).map(([l, v]) => `<div><b>${l}:</b> ${esc(v)}</div>`).join('') : ''}</div>` }
   return `${adminTabs()}<header class="row sp" style="align-items:flex-end"><div><div class="mute" style="font-weight:600">${sk(S.day)}${S.day != TODAY ? ' · oprava dochádzky' : ''}</div><h1 style="font-size:28px">${esc(c.name)}</h1></div><label><span class="sr">Deň</span><input type="date" data-c="day" max="${TODAY}" value="${S.day}" style="width:auto;min-height:40px;padding:6px 10px"></label></header>
  <div class="chips">${S.d.classes.map(x => `<button class="chip ${x.id == S.cls ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
  ${subs.map(x => `<div class="banner" style="background:var(--b);color:var(--bt)"><b>Záskok:</b> trieda ${esc(classOf(x.teacher_id).name)} za ${esc(pname(x.teacher_id))}.</div>`).join('')}
- <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${tile(n('ok') + '/' + rows.length, 'prítomní')}${tile(n('abs'), 'odhlásení')}${tile(n('miss'), 'neohlásení', n('miss'))}</div>
- <div class="card list" style="padding-block:4px">${rows.map(r => { const ps = S.d.pickups.filter(p => p.child_id == r.k.id), es = S.d.emergency.filter(e => e.child_id == r.k.id), h = S.d.health.find(x => x.child_id == r.k.id)
-    const hasHealth = h && (h.allergies || h.chronic || h.medication || h.diet)
-    return `<div><div class="row"><div class="grow"><b>${esc(r.k.name)}</b>${hasHealth ? ' <span class="pill o">zdravie</span>' : ''}
-   ${r.s == 'abs' ? `<div class="mute">${esc(r.a.reason)} · do ${sk(r.a.date_to)}${r.a.note ? ' · ' + esc(r.a.note) : ''}</div>` : ''}
-   ${ps.filter(p => p.authorized).length ? `<div class="mute" style="color:var(--bt)">môže vyzdvihnúť aj: ${ps.filter(p => p.authorized).map(p => esc(p.name)).join(', ')}</div>` : ''}
-   ${ps.filter(p => !p.authorized).map(p => `<button class="btn ghost" style="font-size:13px" data-a="authorize" data-id="${p.id}">Potvrdiť splnomocnenie: ${esc(p.name)}</button>`).join('')}</div>
-   ${r.s == 'abs' ? '<span class="pill">Odhlásený</span>' : r.s == 'miss' ? `<button class="btn ghost" style="color:var(--ot)" data-a="thread" data-id="${r.k.id}" data-go="msg">Kontaktovať</button><button class="pill o" data-a="toggleAtt" data-id="${r.k.id}">Chýba</button>` : `<button class="pill g" data-a="toggleAtt" data-id="${r.k.id}">Prítomný</button>`}</div>
-   <details><summary class="mute" style="cursor:pointer;padding:6px 0">Kontakty${hasHealth ? ', zdravie' : ''} a odhlásenie</summary><div style="display:flex;flex-direction:column;gap:6px;padding:4px 0 6px">
-    ${es.map((e, i) => `<div>${i + 1}. ${esc(e.name)} <span class="mute">${esc(e.relation)}</span> · <a href="${esc(tel(e.phone))}">${esc(phone(e.phone))}</a></div>`).join('') || '<div class="mute">Rodič nezadal núdzové kontakty.</div>'}
-    ${hasHealth ? [['Alergie', h.allergies], ['Ochorenia', h.chronic], ['Lieky', h.medication], ['Diéta', h.diet]].filter(x => x[1]).map(([l, v]) => `<div><b>${l}:</b> ${esc(v)}</div>`).join('') : ''}
-    <button class="btn out" style="align-self:flex-start" data-a="absFor" data-id="${r.k.id}">Zapísať odhlásenie (volal rodič)</button></div></details></div>` }).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>
- <div class="mute">Ťuknutím prepnete Prítomný / Chýba. Ukladá sa hneď.</div>`
+ <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${tile(n('ok') + '/' + rows.length, 'prítomní')}${tile(n('abs') + n('miss'), 'chýbajú')}${tile(n('new'), 'nespracované', late && n('new'))}</div>
+ <div class="ktiles">${rows.map(r => { const hasHealth = S.d.health.some(x => x.child_id == r.k.id && (x.allergies || x.chronic || x.medication || x.diet))
+    return `<button class="ktile ${{ abs: 'red', miss: 'red', ok: 'green', new: late ? 'orange late' : 'orange' }[r.s]} ${S.sel == r.k.id ? 'sel' : ''}" data-a="tile" data-id="${r.k.id}"><b>${esc(r.k.name)}</b><span>${{ abs: 'Odhlásený', miss: 'Chýba', ok: 'Prítomný', new: late ? 'Nespracované' : 'Potvrdiť' }[r.s]}${hasHealth ? ' · zdravie' : ''}</span></button>` }).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>
+ ${panel(sel)}
+ <div class="mute">Oranžové pole ťuknutím potvrdíte ako prítomné. Po ${DEADLINE}:00 sa otvoria možnosti (aj ozvať sa rodičom). Červené = odhlásené alebo chýba, zelené = potvrdené.</div>`
 }
 
 V.posts = () => {
@@ -448,7 +451,7 @@ V.posts = () => {
 }
 
 V.over = () => adminTabs() + `<h1 style="font-size:28px">Prehľad · ${sk(TODAY)}</h1><div class="cols">${S.d.classes.map(c => { const ss = kidsIn(c.id).map(k => status(k.id, TODAY).s), cnt = s => ss.filter(x => x == s).length
-  return `<div class="card"><div class="row sp"><b style="font-size:17px">${esc(c.name)}</b>${cnt('miss') ? `<span class="pill o">${cnt('miss')} neohlásené</span>` : ''}</div><div class="disp" style="font-size:32px;color:var(--g)">${cnt('ok')}<span class="mute" style="font-size:16px"> / ${ss.length} prítomných</span></div><div class="mute">${cnt('abs')} odhlásené · ${teachersOf(c.id).map(t => esc(pname(t)) + (S.d.staff.some(x => x.teacher_id == t && x.day == TODAY) ? ' (nie je)' : '')).join(', ')}</div></div>` }).join('')}</div>
+  return `<div class="card"><div class="row sp"><b style="font-size:17px">${esc(c.name)}</b>${cnt('miss') ? `<span class="pill o">${cnt('miss')} neohlásené</span>` : ''}</div><div class="disp" style="font-size:32px;color:var(--g)">${cnt('ok')}<span class="mute" style="font-size:16px"> / ${ss.length} prítomných</span></div><div class="mute">${cnt('abs')} odhlásené${cnt('new') ? ` · ${cnt('new')} nespracované` : ''} · ${teachersOf(c.id).map(t => esc(pname(t)) + (S.d.staff.some(x => x.teacher_id == t && x.day == TODAY) ? ' (nie je)' : '')).join(', ')}</div></div>` }).join('')}</div>
  <div class="card"><div class="lbl">Na vyriešenie</div>${todo()}</div>`
 
 V.staff = () => {
@@ -466,7 +469,7 @@ V.report = () => {
   const month = S.repMonth + '-01', last = iso(new Date(dt(month).getFullYear(), dt(month).getMonth() + 1, 0))
   const wd = days(month, last).filter(d => d <= TODAY)
   const months = Array.from({ length: 12 }, (_, i) => iso(new Date(dt(TODAY).getFullYear(), dt(TODAY).getMonth() - i, 1)).slice(0, 7))
-  S.rep = S.d.children.map(k => [cls(k.class_id).name, k.name, wd.length, wd.filter(d => status(k.id, d).s != 'ok').length])
+  S.rep = S.d.children.map(k => [cls(k.class_id).name, k.name, wd.length, wd.filter(d => ['abs', 'miss'].includes(status(k.id, d).s)).length])
   return adminTabs() + `<div class="row sp" style="flex-wrap:wrap"><h1 style="font-size:28px">Výkaz dochádzky</h1><div class="row"><select aria-label="Mesiac" data-c="repm" style="width:auto">${months.map(m => `<option value="${m}" ${m == S.repMonth ? 'selected' : ''}>${dt(m + '-01').toLocaleDateString('sk', { month: 'long', year: 'numeric' })}</option>`).join('')}</select><button class="btn" data-a="csv">Stiahnuť CSV</button></div></div>
  <div class="card" style="overflow-x:auto"><table><tr><th>Trieda</th><th>Dieťa</th><th class="n">Prac. dni</th><th class="n">Neprítomný</th><th class="n">Prítomný</th></tr>${S.rep.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td class="n">${r[2]}</td><td class="n">${r[3]}</td><td class="n">${r[2] - r[3]}</td></tr>`).join('')}</table>
  <div class="mute">Do dnešného dňa. Neprítomnosť = odhlásenie alebo „Chýba“ v dochádzke.</div></div>`
@@ -581,10 +584,17 @@ const A = {
     toast(a.meals_from ? `Odhlásené · strava od ${sk(a.meals_from)}` : 'Odhlásené · strava už po uzávierke')
   },
   cancelAbs: async d => { await q(sb.from('absences').delete().eq('id', d.id)); toast('Odhlásenie zrušené') },
-  toggleAtt: async d => {
+  sel: d => { S.sel = d.id ? +d.id : null },
+  tile: async d => {
+    const k = +d.id, st = status(k, S.day).s
+    if (st == 'new' && !(S.day == TODAY && !mealOpen(TODAY))) return A.att({ id: k, k: 'present' })   // do 8:00 stačí jeden klik
+    S.sel = S.sel == k ? null : k
+  },
+  att: async d => {   // k: present | miss | '' (zrušiť)
     const k = +d.id
-    if (status(k, S.day).s == 'miss') await q(sb.from('attendance').delete().eq('child_id', k).eq('day', S.day))
-    else await q(sb.from('attendance').insert({ child_id: k, day: S.day }))
+    await q(sb.from('attendance').delete().eq('child_id', k).eq('day', S.day))
+    if (d.k) await q(sb.from('attendance').insert({ child_id: k, day: S.day, kind: d.k }))
+    if (d.k != 'miss') S.sel = null
   },
   authorize: async d => { await q(sb.from('pickups').update({ authorized: true }).eq('id', d.id)); toast('Splnomocnenie potvrdené') },
   rmPick: async d => { await q(sb.from('pickups').delete().eq('id', d.id)) },
@@ -755,7 +765,7 @@ async function run(fn, local) {
   try { await fn(); if (!local && S.me?.approved && !S.mfaPending) await load() } catch (e) { console.error(e); toast(e.message || 'Niečo sa nepodarilo.') }
   render()
 }
-const LOCAL = ['menu', 'bell', 'theme', 'alg', 'print']   // len prekreslia, dáta netreba znovu načítať
+const LOCAL = ['menu', 'bell', 'theme', 'alg', 'print', 'sel']   // len prekreslia, dáta netreba znovu načítať
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-a]')
   if (!b) { if ((S.menu || S.bell) && !e.target.closest('.pop')) { S.menu = S.bell = false; render() } return }

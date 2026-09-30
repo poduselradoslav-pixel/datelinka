@@ -87,6 +87,7 @@ Kto dostane upozornenie:
 - **Captcha (nepovinné):** Cloudflare Turnstile → site key do `config.js` (`TURNSTILE_SITE_KEY`), secret key do Supabase **Authentication → Attack Protection**.
 - **Ďalšie dieťa (migrácia `…_dalsie_dieta.sql`):** po potvrdení sa prevezmú zákonní zástupcovia, osoby na vyzdvihnutie a núdzové kontakty z prvého dieťaťa.
 - **Odovzdanie vedenia:** Používatelia → Odovzdať vedenie. Riaditeľka s vlastnou triedou má prepínač Moja trieda / Správa škôlky.
+- **Dochádzka (migrácia `…_dochadzka_potvrdenie.sql`):** trieda je mriežka polí. Červené = odhlásené/chýba, zelené = potvrdené učiteľkou, oranžové = nespracované (po 8:00 sa ťuknutím otvoria možnosti).
 - Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
 
 ## Pravidlá zo školského poriadku

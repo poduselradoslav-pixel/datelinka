@@ -86,3 +86,13 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
   #bar,#nav,#install,#toast,.noprint{display:none!important}
   body{background:#fff;color:#000}.card{border:0;padding:0}#app,#app.wide{max-width:none;padding:0}.printonly{display:block}
 }
+
+.ktiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.ktile{display:flex;flex-direction:column;gap:2px;text-align:left;min-height:64px;padding:10px 12px;border-radius:14px;border:2px solid transparent;cursor:pointer;font-size:14px}
+.ktile span{font-size:12px;font-weight:600}
+.ktile.green{background:var(--gs);color:var(--gd);border-color:var(--barf)}
+.ktile.red{background:#FBE3E0;color:#8C1D12;border-color:#F0B9B2}
+.ktile.orange{background:var(--o);color:var(--ot);border-color:var(--ob)}
+.ktile.late{border-color:var(--ot)}
+.ktile.sel{outline:3px solid var(--ink);outline-offset:1px}
+:root[data-theme=dark] .ktile.red{background:#4A1F1B;color:#F5B5AD;border-color:#7A3A34}
