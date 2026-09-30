@@ -769,13 +769,13 @@ const F = {
 }
 
 // ---------- push ----------
-async function enablePush() {
-  if (!VAPID_PUBLIC_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return toast('Upozornenia tu nefungujú. Na iPhone najprv pridajte stránku na plochu a otvorte ju odtiaľ.')
-  if (await Notification.requestPermission() != 'granted') return toast('Upozornenia sú v prehliadači zakázané.')
+async function enablePush(silent) {
+  if (!VAPID_PUBLIC_KEY || !('serviceWorker' in navigator) || !('PushManager' in window)) return silent || toast('Upozornenia tu nefungujú. Na iPhone najprv pridajte stránku na plochu a otvorte ju odtiaľ.')
+  if (await Notification.requestPermission() != 'granted') return (pushAsk(), silent || toast('Upozornenia sú v prehliadači zakázané.'))
   const key = Uint8Array.from(atob(VAPID_PUBLIC_KEY.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
   const sub = (await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })).toJSON()
   await q(sb.rpc('register_push', { e: sub.endpoint, s: sub }))
-  S.push = true; toast('Upozornenia zapnuté')
+  S.push = true; pushAsk(); if (!silent) toast('Upozornenia zapnuté')
 }
 
 // ---------- beh ----------
@@ -861,7 +861,11 @@ document.addEventListener('change', e => {
   if (c == 'link' && el.value) run(async () => { await q(sb.from('guardians').insert({ child_id: +el.dataset.child, parent_id: el.value })); toast('Rodič priradený') })
   if (el.dataset.d) S.draft[el.dataset.d] = el.type == 'checkbox' ? el.checked : el.value
 })
-document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) run(() => {}) })
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !S.me) return
+  if (iso(new Date()) != TODAY) return location.reload()   // nový deň: TODAY by zostalo včerajšie
+  run(() => {})
+})
 sb.auth.onAuthStateChange(ev => {
   if (ev == 'SIGNED_OUT') location.reload()
   if (ev == 'PASSWORD_RECOVERY') { S.recovery = true; run(boot) }   // návrat z odkazu „zabudnuté heslo“
@@ -876,8 +880,15 @@ function realtime() {
   rt.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, p => { if (!document.hidden) toast(p.new.title); refreshKeys('notes') })
   // zmena vlastného profilu (schválenie, rola, deaktivácia) načíta účet znova, zmena cudzieho len obnoví zoznam
   rt.on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, p => p.new?.id == S.me?.id ? run(boot) : refreshKeys('profiles'))
-  rt.subscribe()
+  rt.subscribe(st => {
+    if (st == 'SUBSCRIBED') { if (rtWas) refreshAll(); rtWas = true }   // po výpadku spojenia dotiahnuť zmeškané
+    else if (st == 'CHANNEL_ERROR' || st == 'TIMED_OUT' || st == 'CLOSED') setTimeout(() => { sb.removeChannel(rt); rt = null; realtime() }, 3000)
+  })
 }
+let rtWas = false
+const refreshAll = () => refreshKeys(...new Set(Object.values(TABLES).flat()))
+// poistka: ak by spojenie potichu zlyhalo, tab na popredí si zmeny dotiahne každých 45 s
+setInterval(() => { if (!document.hidden && S.me?.approved && !S.mfaPending && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) refreshAll() }, 45000)
 
 // ---------- inštalácia na plochu ----------
 // Android (Chrome, Samsung, Edge): vlastné tlačidlo spustí systémové okno „Inštalovať“.
@@ -890,9 +901,13 @@ const inAppBrowser = /FBAN|FBAV|Instagram|Messenger|WhatsApp|Line\//i.test(ua)
 const installed = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone
 const dismissed = () => { try { return Date.now() - (+localStorage.getItem('installDismissed') || 0) < 7 * 864e5 } catch { return false } }
 const shareIcon = '<svg class="ic" viewBox="0 0 24 24" aria-label="Zdieľať"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg>'
+// Upozornenia: po prihlásení si ich platforma sama vypýta (povolenie smie vyvolať len ťuknutie, preto tlačidlo)
+const canPush = () => S.me?.approved && VAPID_PUBLIC_KEY && 'serviceWorker' in navigator && 'PushManager' in window && Notification.permission == 'default'
+const pushAsk = () => { showInstall() }
 function showInstall() {
   const b = document.getElementById('install'), close = '<button class="btn ghost" data-a="dismissInstall" aria-label="Zavrieť">×</button>'
-  const html = installed() || dismissed() ? ''
+  const html = canPush() ? `<span class="grow"><b>Zapnite si upozornenia</b> na oznamy, správy a zmeny v dochádzke. Bez nich sa o nich dozviete až po otvorení platformy.</span><button class="btn" data-a="push">Zapnúť</button>`
+    : installed() || dismissed() ? ''
     : inAppBrowser ? `<span class="grow">Pre inštaláciu otvorte túto stránku v ${isIos ? 'Safari' : 'Chrome'} (menu ⋯ → Otvoriť v prehliadači).</span>${close}`
     : installEvent ? `<span class="grow"><b>Nainštalujte si Ďatelinku</b> na plochu. Dostanete upozornenia na nové oznamy a správy od učiteliek a otvorí sa jedným ťuknutím.</span><button class="btn" data-a="install">Nainštalovať</button>${close}`
     : isIos ? `<span class="grow"><b>Pridajte si Ďatelinku na plochu, aby vám chodili upozornenia</b> na oznamy a správy (na iPhone bez toho nefungujú). Stránku otvorte v <b>Safari</b> (Brave, Chrome a iné prehliadače na iPhone to nevedia), ťuknite na ${shareIcon} Zdieľať a potom <b>Pridať na plochu</b>.</span>${close}`
@@ -921,5 +936,8 @@ async function boot() {
   realtime()   // aj čakajúci účet: po schválení sa mu platforma otvorí sama
   const reg = await navigator.serviceWorker?.register('sw.js').catch(() => null)
   S.push = !!(await reg?.pushManager?.getSubscription())
+  // povolenie už raz dané: tichá (znovu)registrácia, aby upozornenia chodili aj po zmene zariadenia/účtu
+  if (S.me.approved && typeof Notification != 'undefined' && Notification.permission == 'granted') await enablePush(true).catch(() => {})
+  showInstall()
 }
 run(boot)

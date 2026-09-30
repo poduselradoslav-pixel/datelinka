@@ -135,3 +135,7 @@ Potom rodič vyplní údaje v karte dieťaťa. Učiteľky a vedenie ich vidia pr
 - [ ] Informácia pre rodičov: čo sa ukladá, kto to vidí a ako dlho
 - [ ] Supabase v EÚ regióne a akceptovaná DPA od Supabase
 - [ ] Po odchode dieťaťa nastaviť `children.active = false` a do 30 dní dieťa zmazať (zmažú sa aj jeho odhlásenia, správy a podobne)
+
+## Upozornenia a realtime (aktualizácia)
+- Po prihlásení platforma sama ponúkne zapnutie upozornení (tlačidlo v hornom pruhu; prehliadač povolenie povolí vyvolať len ťuknutím). Ak je povolenie už dané, zariadenie sa zaregistruje samo a potichu.
+- Realtime: pri výpadku spojenia sa kanál obnoví a dotiahnu sa zmeškané zmeny; tab na popredí si navyše každých 45 s obnoví dáta (nie počas písania). O polnoci sa stránka pri návrate načíta znova.
