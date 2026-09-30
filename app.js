@@ -436,9 +436,9 @@ V.kid = () => {
   ${[['allergies', 'Alergie'], ['chronic', 'Chronické ochorenia'], ['medication', 'Lieky (len epilepsia/alergia, na písomný pokyn lekára)'], ['diet', 'Diéta pre kuchyňu (napr. bezlepková)']].map(([n, l]) => `<label class="f">${l}<textarea rows="2" name="${n}">${esc(h[n])}</textarea></label>`).join('')}
   <div class="mute">Vidia to učiteľky a vedenie. Kuchyňa vidí len počet diét v triede, bez mena.</div><button class="btn out">Uložiť</button></form>`)(S.d.health.find(x => x.child_id == k.id) ?? {})
     : lock('Zdravie a strava', 'Alergie, chronické ochorenia a diéty. Lieky MŠ nepodáva, výnimkou sú epilepsia a alergia na písomný pokyn lekára. Sprístupní sa po schválení spracúvania údajov škôlkou.')}
- ${sec('a', 'Ďalšie dieťa v škôlke', `${S.d.requests.filter(r => r.parent_id == S.me.id).map(r => `<div class="row"><span class="grow">${esc(r.child_name)} <span class="pill o">čaká na potvrdenie</span></span><button class="btn ghost" data-a="cancelReq" data-id="${r.id}">Zrušiť</button></div>`).join('')}
+ ${S.adding || S.d.requests.some(r => r.parent_id == S.me.id) ? `<div class="card" id="addkid"><div class="lbl">Pridať dieťa</div>${S.d.requests.filter(r => r.parent_id == S.me.id).map(r => `<div class="row"><span class="grow">${esc(r.child_name)} <span class="pill o">čaká na potvrdenie</span></span><button class="btn ghost" data-a="cancelReq" data-id="${r.id}">Zrušiť</button></div>`).join('')}
   <form class="row" data-a="requestChild"><input name="n" aria-label="Meno dieťaťa" placeholder="Meno a priezvisko dieťaťa" required minlength="2" maxlength="100"><button class="btn out">Požiadať</button></form>
-  <div class="mute">Riaditeľka žiadosť potvrdí. Zákonní zástupcovia, osoby na vyzdvihnutie a núdzové kontakty sa prevezmú z prvého dieťaťa.</div>`, S.d.requests.some(r => r.parent_id == S.me.id))}
+  <div class="mute">Riaditeľka žiadosť potvrdí. Zákonní zástupcovia, osoby na vyzdvihnutie a núdzové kontakty sa prevezmú z prvého dieťaťa.</div></div>` : ''}
  <div class="card"><div class="lbl">Súhlasy</div><label class="row sp">Výlety mimo areálu MŠ<input type="checkbox" data-c="consent" data-child="${k.id}" ${trips?.granted ? 'checked' : ''}></label></div>
  <div class="card"><div class="lbl">Škôlka</div><div>J. Bánika 1733/41, Zvolen · prevádzka 6:30–17:00</div><div class="mute">Príchod do 8:00. Vyzdvihnutie pred spaním do 12:00, inak po 15:00.</div>
   <div class="row sp"><span>Trieda</span><a href="tel:+421908618373">+421 908 618 373</a></div><div class="row sp"><span>Strava (vedúca ŠJ)</span><a href="tel:+421917287956">+421 917 287 956</a></div><div class="row sp"><span>Riaditeľka · konzultácie 12:00–12:30</span><a href="tel:+421917287813">+421 917 287 813</a></div></div>`
@@ -553,13 +553,13 @@ const A = {
   notesRead: async () => { await q(sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', S.me.id).is('read_at', null)) },
   testPush: async () => { await q(sb.rpc('send_test')); toast('Skúšobné upozornenie odoslané') },
   filter: d => { S.filter = d.f },
-  child: d => { S.child = +d.id; S.form = null },
+  child: d => { S.child = +d.id; S.form = null; S.adding = false },
   cls: d => { S.cls = +d.id; S.draft = null },
   morePosts: () => { S.postLimit = (S.postLimit || 100) + 100 },
   utab: d => { S.utab = d.v },
   acc: d => { S.acc = { ...S.acc, [d.id]: !d.open } },
   adminMode: d => { S.mode = d.m; S.v = d.m == 'admin' ? 'over' : 'class'; if (d.m == 'teach') S.cls = S.d.ct.find(x => x.teacher_id == S.me.id)?.class_id ?? S.cls; },
-  addKid: () => { S.v = 'kid'; S.scrollTo = 'addkid'; S.acc = { ...S.acc, a: true } },
+  addKid: () => { S.v = 'kid'; S.scrollTo = 'addkid'; S.adding = true },
   thread: d => { S.thread = d.id ? +d.id : null; if (d.go) { S.v = d.go; const k = byId(S.d.children, S.thread); S.ch = S.role == 'admin' && !S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == k?.class_id) ? 'office' : 'class' } },
   ch: d => { S.ch = d.ch; S.thread = null },
   week: d => { S.week = +d.i },
@@ -705,7 +705,7 @@ const F = {
     await q(sb.from('profiles').update({ approved: true, role: fd.role }).eq('id', f.dataset.id))
     toast('Schválené')
   },
-  requestChild: async fd => { await q(sb.from('child_requests').insert({ child_name: fd.n.trim() })); toast('Žiadosť odoslaná riaditeľke') },
+  requestChild: async fd => { await q(sb.from('child_requests').insert({ child_name: fd.n.trim() })); S.adding = false; toast('Žiadosť odoslaná riaditeľke') },
   mfaVerify: async fd => {
     const { data: l } = await sb.auth.mfa.listFactors(), t = l?.totp?.[0]; if (!t) throw new Error('Overenie nie je nastavené.')
     const { data: c, error: e1 } = await sb.auth.mfa.challenge({ factorId: t.id }); if (e1) throw e1
