@@ -118,7 +118,7 @@ function refreshKeys(...keys) {
 const TABLES = { messages: ['msgs'], posts: ['posts'], absences: ['absences', 'meals', 'diets'], attendance: ['attendance'], post_reads: ['reads'], poll_votes: ['votes'],
   children: ['children', 'inactive', 'meals', 'diets'], guardians: ['guardians'], classes: ['classes', 'meals'], class_teachers: ['ct'], pickups: ['pickups'], consents: ['consents'],
   emergency_contacts: ['emergency'], child_health: ['health', 'diets'], staff_absences: ['staff'], menu: ['menu'], settings: ['settings', 'diets'], thread_reads: ['treads'],
-  closed_days: ['closed', 'meals'], child_requests: ['requests'], notification_prefs: ['prefs'] }
+  closed_days: ['closed', 'meals'], child_requests: ['requests'] }   // len tabuľky z publikácie supabase_realtime, inak Supabase odmietne celý kanál
 
 // ---------- vyhľadávanie ----------
 const byId = (a, id) => a?.find(x => x.id == id)
@@ -408,8 +408,9 @@ V.msg = () => {
   const feed = k => S.d.msgs.filter(m => m.child_id == k.id && m.channel == ch)
   if (staff && !S.thread) {
     const cl = office ? S.d.classes : myClasses().filter(c => S.role != 'admin' || S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == c.id)), cid = cl.some(x => x.id == S.cls) ? S.cls : cl[0]?.id
-    const ks = kidsIn(cid).map(k => ({ k, last: feed(k)[0] })).sort((a, b) => (b.last?.created_at ?? '').localeCompare(a.last?.created_at ?? ''))
-    return `${adminTabs()}<h1 style="font-size:24px">Správy · ${office ? 'rodičia (riaditeľka)' : esc(cls(cid)?.name ?? '')}</h1>${S.role == 'admin' ? tabs([...(teaches() ? [['class', 'Moja trieda']] : []), ['office', 'Rodičia (vedenie)']]) : ''}${cl.length > 1 ? `<div class="chips">${cl.map(x => `<button class="chip ${x.id == cid ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>` : ''}<div class="card list" style="padding-block:4px">${ks.map(({ k, last }) => `<div><button class="btn ghost" style="width:100%;text-align:left;color:var(--ink)" data-a="thread" data-id="${k.id}"><b>${esc(k.name)}</b>${badge(unread(k.id, ch))}<div class="mute">${last ? esc(last.body.slice(0, 60)) + ' · ' + time(last.created_at) : 'bez správ'}</div></button></div>`).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>${office ? '<div class="mute">Tieto správy vidí len riaditeľka a rodičia dieťaťa, učiteľky nie.</div>' : ''}`
+    const mq = norm(S.mq ?? ''), pool = office ? (mq ? S.d.children.filter(k => norm(k.name).includes(mq)) : S.d.children.filter(k => feed(k).length)) : kidsIn(cid)   // vedenie: len rozbehnuté konverzácie, nová cez hľadanie
+    const ks = pool.map(k => ({ k, last: feed(k)[0] })).sort((a, b) => (b.last?.created_at ?? '').localeCompare(a.last?.created_at ?? ''))
+    return `${adminTabs()}<h1 style="font-size:24px">Správy · ${office ? 'rodičia' : esc(cls(cid)?.name ?? '')}</h1>${S.role == 'admin' ? tabs([...(teaches() ? [['class', 'Moja trieda']] : []), ['office', 'Rodičia (vedenie)']]) : ''}${office ? `<input data-c="mq" aria-label="Napísať rodičovi" placeholder="Napísať rodičovi – hľadať meno dieťaťa" value="${esc(S.mq ?? '')}">` : ''}${!office && cl.length > 1 ? `<div class="chips">${cl.map(x => `<button class="chip ${x.id == cid ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>` : ''}<div class="card list" style="padding-block:4px">${ks.map(({ k, last }) => `<div><button class="btn ghost" style="width:100%;text-align:left;color:var(--ink)" data-a="thread" data-id="${k.id}"><b>${esc(k.name)}</b>${badge(unread(k.id, ch))}<div class="mute">${last ? esc(last.body.slice(0, 60)) + ' · ' + time(last.created_at) : 'bez správ'}${office ? ' · ' + esc(cls(k.class_id)?.name ?? '') : ''}</div></button></div>`).join('') || `<div class="mute">${office ? (S.mq ? 'Žiadne dieťa s týmto menom.' : 'Zatiaľ žiadne konverzácie. Novú začnete vyhľadaním dieťaťa.') : 'V triede nie sú deti.'}</div>`}</div>${office ? '<div class="mute">Tieto správy vidí len riaditeľka a rodičia dieťaťa, učiteľky nie.</div>' : ''}`
   }
   const k = byId(S.d.children, staff ? S.thread : S.child)
   if (!k) return '<p class="mute">Nemáte priradené dieťa.</p>'
@@ -563,7 +564,7 @@ const A = {
   acc: d => { S.acc = { ...S.acc, [d.id]: !d.open } },
   adminMode: d => { S.mode = d.m; S.v = d.m == 'admin' ? 'over' : 'class'; if (d.m == 'teach') S.cls = S.d.ct.find(x => x.teacher_id == S.me.id)?.class_id ?? S.cls; },
   addKid: () => { S.v = 'addkid'; scrollTo(0, 0) },
-  thread: d => { S.thread = d.id ? +d.id : null; if (d.go) { S.v = d.go; const k = byId(S.d.children, S.thread); S.ch = S.role == 'admin' && !S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == k?.class_id) ? 'office' : 'class' } },
+  thread: d => { S.thread = d.id ? +d.id : null; S.mq = null; if (d.go) { S.v = d.go; const k = byId(S.d.children, S.thread); S.ch = S.role == 'admin' && !S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == k?.class_id) ? 'office' : 'class' } },
   ch: d => { S.ch = d.ch; S.thread = null },
   week: d => { S.week = +d.i },
   mode: () => { S.reg = !S.reg; S.forgot = false },
@@ -840,7 +841,7 @@ document.addEventListener('click', e => {
 })
 document.addEventListener('submit', e => { e.preventDefault(); const f = e.target; run(async () => { await F[f.dataset.a](Object.fromEntries(new FormData(f)), f); f.reset() }) })
 document.addEventListener('focusin', e => { const el = e.target; if (el.name?.includes('|') && S.menuCell != el.name) { S.menuCell = el.name; const b = document.getElementById('algbar'); if (b) b.innerHTML = algBar() } })
-document.addEventListener('input', e => { const el = e.target; if (el.dataset.c == 'uq') { S.uq = el.value; render() }; if (el.name?.includes('|')) (S.menuDraft ??= {})[el.name] = el.value; if (el.dataset.c == 'note') S.form.note = el.value; if (el.dataset.d && el.type != 'checkbox' && el.type != 'date') S.draft[el.dataset.d] = el.value })
+document.addEventListener('input', e => { const el = e.target; if (el.dataset.c == 'uq') { S.uq = el.value; render() }; if (el.dataset.c == 'mq') { S.mq = el.value; render() }; if (el.name?.includes('|')) (S.menuDraft ??= {})[el.name] = el.value; if (el.dataset.c == 'note') S.form.note = el.value; if (el.dataset.d && el.type != 'checkbox' && el.type != 'date') S.draft[el.dataset.d] = el.value })
 document.addEventListener('change', e => {
   const el = e.target, c = el.dataset.c
   if ((c == 'from' || c == 'to') && el.value) { S.form[c] = el.value; if (S.form.to < S.form.from) S.form.to = S.form.from; render() }
@@ -885,7 +886,7 @@ function realtime() {
   rt.on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, p => p.new?.id == S.me?.id ? run(boot) : refreshKeys('profiles'))
   rt.subscribe(st => {
     if (st == 'SUBSCRIBED') { if (rtWas) refreshAll(); rtWas = true }   // po výpadku spojenia dotiahnuť zmeškané
-    else if (st == 'CHANNEL_ERROR' || st == 'TIMED_OUT' || st == 'CLOSED') setTimeout(() => { sb.removeChannel(rt); rt = null; realtime() }, 3000)
+    else if (console.warn('realtime', st), st == 'CHANNEL_ERROR' || st == 'TIMED_OUT' || st == 'CLOSED') setTimeout(() => { sb.removeChannel(rt); rt = null; realtime() }, 3000)
   })
 }
 let rtWas = false

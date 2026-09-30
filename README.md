@@ -148,3 +148,7 @@ Pridať dieťa je samostatná obrazovka (Dieťa → + Pridať dieťa).
 `20260929000022_dochadzka_cas.sql`: upozornenie rodičom „dieťa dnes nie je v škôlke“ sa posiela len v pracovné dni 6:30–17:00 a nie v dňoch zatvorenia. Zápis dochádzky mimo toho ostáva možný (opravy), len nikoho neruší.
 
 Trieda: v pracovné dni mimo 6:30–17:00, cez víkend a v dňoch zatvorenia učiteľka namiesto prítomných/chýbajúcich vidí „Mimo prevádzky“ (staršie dni sa dajú opraviť cez výber dňa).
+
+## Realtime – oprava
+Klient odoberal zmeny aj z tabuľky `notification_prefs`, ktorá nie je v publikácii `supabase_realtime`. Supabase vtedy odmietne celý kanál („Unable to subscribe to changes…“), takže nechodilo nič. Tabuľka je z odberu vyradená; do `TABLES` v app.js dávať len tabuľky z publikácie.
+Správy vedenia: zoznam ukazuje len rozbehnuté konverzácie, novú začne riaditeľka vyhľadaním dieťaťa.
