@@ -99,3 +99,25 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
 
 .card.urgent{background:#FBE3E0;border-color:#E58B80;color:#8C1D12}
 :root[data-theme=dark] .card.urgent{background:#4A1F1B;border-color:#7A3A34;color:#F5B5AD}
+
+.anav{position:fixed;z-index:4;background:var(--card);display:flex}
+.ai{display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--ink);font-weight:600;font-size:14px;cursor:pointer;position:relative}
+.ai.on{background:var(--gs);color:var(--gd)}
+.ag{display:flex}
+@media (min-width:900px){
+  .anav{left:0;top:44px;bottom:0;width:208px;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto;flex-direction:column;gap:2px}
+  .anav-logo{padding:0 6px 10px}
+  .ag{flex-direction:column;gap:2px}
+  .agl{font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;padding:12px 12px 4px}
+  .ai{width:100%;padding:10px 12px;border-radius:10px;text-align:left}
+  .ai[data-a=adminMode]{border:1px dashed var(--bd2);margin-top:10px}
+  #app.side{margin:0 0 0 208px;max-width:1040px;padding:20px 28px 32px}
+}
+@media (max-width:899px){
+  .anav{left:0;right:0;bottom:0;border-top:1px solid var(--line);overflow-x:auto;padding-bottom:env(safe-area-inset-bottom)}
+  .anav-logo,.agl{display:none}
+  .ai{flex:0 0 72px;min-height:62px;flex-direction:column;justify-content:center;gap:3px;font-size:11px;text-align:center;padding:4px}
+  .ai .pill{position:absolute;top:4px;right:10px;margin:0!important}
+  #app.side{padding-bottom:100px}
+}
+@media print{#app.side{margin:0!important}}

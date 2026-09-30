@@ -94,6 +94,7 @@ Kto dostane upozornenie:
 - **Urgentný oznam (migrácia `…_urgentny_oznam.sql`):** typ Urgentné v Oznamoch príde všetkým rodičom aj pri vypnutých upozorneniach a pushi, pripne sa a vyžaduje potvrdenie. Staršie oznamy sa dotiahnu tlačidlom Staršie oznamy.
 - **Telefón rodiča (migrácia `…_telefon_rodica.sql`):** zadáva sa pri registrácii a po priradení dieťaťa sa sám vloží medzi núdzové kontakty. Registrácia pripomína meno dieťaťa podľa rodného listu.
 - **Security Advisor (migrácia `…_skryte_pomocne_funkcie.sql`):** pomocné funkcie práv sú v schéme `private`. Zostanú len upozornenia na funkcie, ktoré platforma volá zámerne (porcie, push, schválenie dieťaťa), tie si rolu kontrolujú samy. „Leaked password protection“ sa zapína v Authentication → Sign In / Providers → Email (vyžaduje plán Pro).
+- **Navigácia vedenia:** na počítači bočný panel s ikonkami v skupinách (Dnes, Obsah, Škôlka, Správa), na mobile dolná lišta, ktorú možno posúvať do strán.
 - Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
 
 ## Pravidlá zo školského poriadku
