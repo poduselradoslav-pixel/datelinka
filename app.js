@@ -269,7 +269,8 @@ V.mfa = () => {
 const pref = k => S.d.prefs?.[0]?.[k] ?? true
 const unseen = () => S.d.notes?.filter(n => !n.read_at).length || 0
 const THEMES = [['auto', 'Auto'], ['light', 'Svetlý'], ['dark', 'Tmavý']]
-V.settings = () => `<header class="row"><button class="btn ghost" aria-label="Späť" data-a="go" data-v="${DEF[S.role]}">${ic('back')}</button><h1 style="font-size:22px">Upozornenia</h1></header>
+V.settings = () => `<header class="row"><button class="btn ghost" aria-label="Späť" data-a="go" data-v="${DEF[S.role]}">${ic('back')}</button><h1 style="font-size:22px">Nastavenia</h1></header>
+ <div class="card"><div class="lbl">Vaše meno</div><input data-c="myname" aria-label="Meno" value="${esc(S.me.full_name || '')}" maxlength="100"><div class="mute">Zmena mena po svadbe a pod. Uloží sa po opustení poľa.</div></div>
  <div class="card"><div class="lbl">O čom chcem vedieť</div>
   ${(S.role == 'parent' ? [['posts,messages', 'Oznamy a správy'], ['absences,pickups', 'Odhlásenia a osoby na vyzdvihnutie'], ['reminders', 'Ranná pripomienka odhlásenia (7:30)']]
     : S.role == 'kitchen' ? [] : [['messages', 'Správy od rodičov'], ['absences,pickups,substitutes', 'Dochádzka, odhlásenia a záskoky'], ...(S.role == 'admin' ? [['accounts', 'Nové registrácie']] : [])])
@@ -310,7 +311,7 @@ V.users = () => {
     people: `<input data-c="uq" aria-label="Hľadať" placeholder="Hľadať meno, e-mail alebo dieťa" value="${esc(S.uq ?? '')}">
 
  <div class="lbl">Aktívni (${active.length})</div>
- <div class="card" style="overflow-x:auto"><table><tr><th>Meno</th><th>E-mail</th><th>Rola</th><th>Deti</th><th></th></tr>${active.filter(hitU).map(p => `<tr><td>${esc(p.full_name || '–')}</td><td class="mute">${esc(p.email)}</td>
+ <div class="card" style="overflow-x:auto"><table><tr><th>Meno</th><th>E-mail</th><th>Rola</th><th>Deti</th><th></th></tr>${active.filter(hitU).map(p => `<tr><td><input aria-label="Meno" data-c="pname" data-id="${p.id}" value="${esc(p.full_name || '')}" style="min-height:38px;padding:4px 8px;min-width:150px"></td><td class="mute">${esc(p.email)}</td>
   <td>${p.id == S.me.id ? ROLE[p.role] : `<select aria-label="Rola" data-c="role" data-id="${p.id}" style="${sel}">${Object.entries(ROLE).map(([v, l]) => `<option value="${v}" ${p.role == v ? 'selected' : ''}>${l}</option>`).join('')}</select>`}</td>
   <td>${kidsOf(p.id).map(esc).join(', ') || (p.role == 'parent' ? '<span class="mute">žiadne</span>' : '')}</td>
   <td>${p.id == S.me.id ? '' : `<button class="btn ghost" style="color:var(--ot)" data-a="block" data-id="${p.id}" data-on="1">Deaktivovať</button>`}</td></tr>`).join('')}</table></div>
@@ -548,7 +549,7 @@ const A = {
   morePosts: () => { S.postLimit = (S.postLimit || 100) + 100 },
   utab: d => { S.utab = d.v },
   acc: d => { S.acc = { ...S.acc, [d.id]: !d.open } },
-  adminMode: d => { S.mode = d.m; S.v = d.m == 'admin' ? 'over' : 'class'; if (d.m == 'teach') S.cls = S.d.ct.find(x => x.teacher_id == S.me.id)?.class_id ?? S.cls; try { localStorage.setItem('mode', d.m) } catch {} },
+  adminMode: d => { S.mode = d.m; S.v = d.m == 'admin' ? 'over' : 'class'; if (d.m == 'teach') S.cls = S.d.ct.find(x => x.teacher_id == S.me.id)?.class_id ?? S.cls; },
   addKid: () => { S.v = 'kid'; S.scrollTo = 'addkid'; S.acc = { ...S.acc, a: true } },
   thread: d => { S.thread = d.id ? +d.id : null; if (d.go) S.v = d.go },
   week: d => { S.week = +d.i },
@@ -801,7 +802,7 @@ function render() {
     ${S.d.notes?.length ? S.d.notes.map(x => `<button class="note ${x.read_at ? '' : 'new'}" data-a="note" data-id="${x.id}"><b>${esc(x.title)}</b>${x.body ? `<span>${esc(x.body)}</span>` : ''}<small>${time(x.created_at)}</small></button>`).join('') : '<div class="mute" style="padding:10px 0">Zatiaľ nič nové.</div>'}
     <button class="btn ghost" data-a="go" data-v="settings">Nastavenia upozornení</button></div>`
     : S.menu ? `<div class="pop"><div class="mute" style="padding-bottom:6px">${esc(S.me.email)} · ${ROLE[S.role]}</div>
-    ${S.me.approved && !S.mfaPending ? '<button data-a="go" data-v="settings">Nastavenie upozornení</button>' : ''}<button data-a="go" data-v="privacy">Ochrana osobných údajov</button>${S.role == 'admin' && S.me.approved && !S.mfaPending ? '<button data-a="mfaOpen">Dvojfaktorové prihlásenie</button>' : ''}
+    ${S.me.approved && !S.mfaPending ? '<button data-a="go" data-v="settings">Nastavenia a meno</button>' : ''}<button data-a="go" data-v="privacy">Ochrana osobných údajov</button>${S.role == 'admin' && S.me.approved && !S.mfaPending ? '<button data-a="mfaOpen">Dvojfaktorové prihlásenie</button>' : ''}
     <div class="lbl" style="padding:8px 0 4px">Vzhľad</div><div class="chips">${THEMES.map(([m, l]) => `<button class="chip ${window.theme?.get() == m ? 'on' : ''}" data-a="theme" data-m="${m}">${l}</button>`).join('')}</div>
     <button data-a="go" data-v="password">Zmeniť heslo</button><button data-a="logout">Odhlásiť sa</button></div>` : ''
   bar.innerHTML = `<div class="bi"><span style="margin-right:auto"><b>${esc(S.me.full_name || S.me.email)}</b> · ${ROLE[S.role]}</span>${S.me.approved && !S.mfaPending ? `<button class="bell" data-a="bell" aria-label="Upozornenia">${ic('bell')}${cnt ? `<i>${cnt}</i>` : ''}</button>` : ''}<button data-a="menu" aria-haspopup="true" aria-expanded="${S.menu}">Menu ▾</button></div>${pop}`
@@ -842,6 +843,8 @@ document.addEventListener('change', e => {
   if (c == 'day' && el.value) { S.day = el.value > TODAY ? TODAY : el.value; since(S.day); run(() => {}) }
   if (c == 'repm') { S.repMonth = el.value; since(el.value + '-01'); run(() => {}) }
   if (c == 'role') run(async () => { await q(sb.from('profiles').update({ role: el.value }).eq('id', el.dataset.id)); toast('Rola zmenená') })
+  if (c == 'pname' && el.value.trim()) run(async () => { await q(sb.from('profiles').update({ full_name: el.value.trim() }).eq('id', el.dataset.id)); toast('Meno zmenené') })
+  if (c == 'myname' && el.value.trim()) run(async () => { await q(sb.from('profiles').update({ full_name: el.value.trim() }).eq('id', S.me.id)); S.me.full_name = el.value.trim(); toast('Meno uložené') })
   if (c == 'kname' && el.value.trim()) run(async () => { await q(sb.from('children').update({ name: el.value.trim() }).eq('id', el.dataset.id)); toast('Uložené') })
   if (c == 'movefrom') { S.moveFrom = +el.value; render() }
   if (c == 'kcls') run(async () => { await q(sb.from('children').update({ class_id: +el.value }).eq('id', el.dataset.id)); toast('Dieťa presunuté') })
@@ -895,7 +898,6 @@ async function boot() {
   const { data: { session } } = await sb.auth.getSession()
   if (!session) return
   S.me = await q(sb.from('profiles').select('*').eq('id', session.user.id).single())
-  try { S.mode ??= localStorage.getItem('mode') } catch {}
   if (S.role && S.role != S.me.role) return location.reload()   // zmenila sa rola: nový začiatok, žiadna stará obrazovka
   S.role = S.me.role; S.v = S.me.approved && !S.me.blocked ? (S.v && S.v != 'pending' ? S.v : DEF[S.role]) : 'pending'
   if (S.me.blocked) S.me.approved = false
