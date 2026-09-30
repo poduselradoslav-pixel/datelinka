@@ -98,9 +98,9 @@ async function load(keys) {
   // otvorené vlákno = prečítané
   const open = S.v == 'msg' && (S.role == 'parent' ? S.child : S.thread)
   if ((want('msgs') || want('treads')) && open && unread(open)) {
-    const row = { user_id: S.me.id, child_id: open, read_at: new Date().toISOString() }
-    await q(sb.from('thread_reads').upsert(row))
-    D.treads = D.treads.filter(x => x.child_id != open).concat(row)
+    const row = { user_id: S.me.id, child_id: open, channel: curCh(), read_at: new Date().toISOString() }
+    await q(sb.from('thread_reads').upsert(row, { onConflict: 'user_id,child_id,channel' }))
+    D.treads = D.treads.filter(x => !(x.child_id == open && x.channel == row.channel)).concat(row)
   }
 }
 
@@ -137,9 +137,14 @@ const readBy = p => S.d.reads.filter(r => r.post_id == p.id).map(r => r.user_id)
 const teachers = () => S.d.profiles.filter(p => p.approved && !p.blocked && (p.role == 'teacher' || p.role == 'admin'))
 const healthOn = () => !!S.d.settings?.find(s => s.key == 'health_enabled')?.value
 // Neprečítané: rodič = jeho deti, učiteľka/admin = deti tried, kde sú priradení.
-const myThreads = () => S.role == 'parent' ? S.d.children.map(k => k.id) : S.d.children.filter(k => S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == k.class_id)).map(k => k.id)
-const unread = c => { const r = S.d.treads?.find(x => x.child_id == c)?.read_at; return S.d.msgs.filter(m => m.child_id == c && m.sender_id != S.me.id && (!r || new Date(m.created_at) > new Date(r))).length }
-const unreadAll = () => S.d.msgs ? myThreads().reduce((s, c) => s + unread(c), 0) : 0
+const teaches = () => !!S.d.ct?.some(x => x.teacher_id == S.me.id)
+const curCh = () => S.role == 'teacher' ? 'class' : S.ch ?? (S.role == 'admin' && !teaches() ? 'office' : 'class')   // kanál správ: class = učiteľka, office = riaditeľka
+const myKidsCls = () => S.d.children.filter(k => S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == k.class_id)).map(k => k.id)
+const myThreads = () => S.role == 'parent' ? S.d.children.flatMap(k => [[k.id, 'class'], [k.id, 'office']])
+  : [...myKidsCls().map(c => [c, 'class']), ...(S.role == 'admin' ? S.d.children.map(k => [k.id, 'office']) : [])]
+const unread = (c, ch = curCh()) => { const r = S.d.treads?.find(x => x.child_id == c && x.channel == ch)?.read_at; return S.d.msgs.filter(m => m.child_id == c && m.channel == ch && m.sender_id != S.me.id && (!r || new Date(m.created_at) > new Date(r))).length }
+const unreadCh = ch => S.d.msgs ? myThreads().filter(t => t[1] == ch).reduce((n, [c]) => n + unread(c, ch), 0) : 0
+const unreadAll = () => S.d.msgs ? myThreads().reduce((n, [c, ch]) => n + unread(c, ch), 0) : 0
 const badge = n => n ? ` <span class="pill o" style="padding:1px 7px">${n}</span>` : ''
 
 // ---------- UI kúsky ----------
@@ -396,19 +401,23 @@ V.cal = () => {
 }
 
 V.msg = () => {
-  const staff = S.role != 'parent'
+  const staff = S.role != 'parent', ch = curCh(), office = ch == 'office'
+  const admins = () => S.d.profiles.filter(p => p.role == 'admin' && p.approved && !p.blocked).map(p => first(p.full_name || p.email))
+  const tabs = (items) => `<div class="chips">${items.map(([c, l]) => `<button class="chip ${ch == c ? 'on' : ''}" data-a="ch" data-ch="${c}">${l}${badge(unreadCh(c))}</button>`).join('')}</div>`
+  const feed = k => S.d.msgs.filter(m => m.child_id == k.id && m.channel == ch)
   if (staff && !S.thread) {
-    const ks = kidsIn(S.cls).map(k => ({ k, last: S.d.msgs.find(m => m.child_id == k.id) })).sort((a, b) => (b.last?.created_at ?? '').localeCompare(a.last?.created_at ?? ''))
-    return `${adminTabs()}<h1 style="font-size:24px">Správy · ${esc(cls(S.cls).name)}</h1><div class="chips">${myClasses().map(x => `<button class="chip ${x.id == S.cls ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div><div class="card list" style="padding-block:4px">${ks.map(({ k, last }) => `<div><button class="btn ghost" style="width:100%;text-align:left;color:var(--ink)" data-a="thread" data-id="${k.id}"><b>${esc(k.name)}</b>${badge(unread(k.id))}<div class="mute">${last ? esc(last.body.slice(0, 60)) + ' · ' + time(last.created_at) : 'bez správ'}</div></button></div>`).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>`
+    const cl = office ? S.d.classes : S.role == 'admin' ? postClasses() : myClasses(), cid = cl.some(x => x.id == S.cls) ? S.cls : cl[0]?.id
+    const ks = kidsIn(cid).map(k => ({ k, last: feed(k)[0] })).sort((a, b) => (b.last?.created_at ?? '').localeCompare(a.last?.created_at ?? ''))
+    return `${adminTabs()}<h1 style="font-size:24px">Správy · ${office ? 'rodičia (riaditeľka)' : esc(cls(cid)?.name ?? '')}</h1>${S.role == 'admin' ? tabs([...(teaches() ? [['class', 'Moja trieda']] : []), ['office', 'Rodičia (vedenie)']]) : ''}${cl.length > 1 ? `<div class="chips">${cl.map(x => `<button class="chip ${x.id == cid ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>` : ''}<div class="card list" style="padding-block:4px">${ks.map(({ k, last }) => `<div><button class="btn ghost" style="width:100%;text-align:left;color:var(--ink)" data-a="thread" data-id="${k.id}"><b>${esc(k.name)}</b>${badge(unread(k.id, ch))}<div class="mute">${last ? esc(last.body.slice(0, 60)) + ' · ' + time(last.created_at) : 'bez správ'}</div></button></div>`).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>${office ? '<div class="mute">Tieto správy vidí len riaditeľka a rodičia dieťaťa, učiteľky nie.</div>' : ''}`
   }
   const k = byId(S.d.children, staff ? S.thread : S.child)
   if (!k) return '<p class="mute">Nemáte priradené dieťa.</p>'
   const h = new Date().getHours() + new Date().getMinutes() / 60, quiet = h < 6.5 || h >= 17
-  const ms = S.d.msgs.filter(m => m.child_id == k.id).reverse()
-  return `${adminTabs()}<header class="row">${staff ? `<button class="btn ghost" aria-label="Späť" data-a="thread" data-id="">${ic('back')}</button>` : ''}<div><h1 style="font-size:20px">${staff ? esc(k.name) : 'Trieda ' + esc(cls(k.class_id).name)}</h1><div class="mute">${staff ? 'rodičia' : teachersOf(k.class_id).map(pname).map(esc).join(', ')}</div></div></header>
- ${!staff ? kidChips() : ''}${!staff && quiet ? '<div class="banner" style="background:var(--lock)">Mimo prevádzky (6:30–17:00) učiteľka správu uvidí ráno. Stravu odhlasujte tlačidlom Odhlásiť, nie správou.</div>' : ''}
+  const ms = feed(k).reverse(), who = office ? 'Riaditeľka' : 'Učiteľka'
+  return `${adminTabs()}<header class="row">${staff ? `<button class="btn ghost" aria-label="Späť" data-a="thread" data-id="">${ic('back')}</button>` : ''}<div><h1 style="font-size:20px">${staff ? esc(k.name) : who}</h1><div class="mute">${staff ? (office ? 'rodičia · riaditeľka' : 'rodičia') : (office ? admins() : teachersOf(k.class_id).map(pname).map(n => first(n))).map(esc).join(', ')}</div></div></header>
+ ${!staff ? kidChips() + tabs([['class', 'Učiteľka'], ['office', 'Riaditeľka']]) : ''}${!staff && !office && quiet ? '<div class="banner" style="background:var(--lock)">Mimo prevádzky (6:30–17:00) učiteľka správu uvidí ráno. Stravu odhlasujte tlačidlom Odhlásiť, nie správou.</div>' : ''}
  <div style="display:flex;flex-direction:column;gap:8px">${ms.map(m => `<div class="msg ${m.sender_id == S.me.id ? 'me' : 'them'}">${esc(m.body)}<div style="font-size:11px;opacity:.75;margin-top:4px">${m.sender_id == S.me.id ? '' : esc(pname(m.sender_id)) + ' · '}${time(m.created_at)}</div></div>`).join('') || '<p class="mute">Zatiaľ žiadne správy.</p>'}</div>
- <form class="row" data-a="send" data-child="${k.id}"><label class="grow"><span class="sr">Správa</span><input name="t" placeholder="Napíšte správu…" autocomplete="off" required maxlength="2000"></label><button class="btn">Odoslať</button></form>`
+ <form class="row" data-a="send" data-child="${k.id}" data-ch="${ch}"><label class="grow"><span class="sr">Správa</span><input name="t" placeholder="${staff ? 'Napíšte správu…' : 'Napíšte ' + (office ? 'riaditeľke' : 'učiteľke') + '…'}" autocomplete="off" required maxlength="2000"></label><button class="btn">Odoslať</button></form>`
 }
 
 V.kid = () => {
@@ -531,7 +540,7 @@ const A = {
     const n = byId(S.d.notes, d.id); if (!n) return
     if (!n.read_at) await q(sb.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id))
     const parent = S.role == 'parent'
-    if (n.kind == 'message' && n.child_id) { if (parent) S.child = n.child_id; else S.thread = n.child_id; S.v = 'msg' }
+    if (n.kind == 'message' && n.child_id) { S.ch = n.view == 'msg:office' ? 'office' : 'class'; if (parent) S.child = n.child_id; else S.thread = n.child_id; S.v = 'msg' }
     else if ((n.kind == 'absence' || n.kind == 'pickup') && n.child_id) {
       if (parent) { S.child = n.child_id; S.v = n.view || 'board' } else { S.cls = byId(S.d.children, n.child_id)?.class_id ?? S.cls; S.v = 'class' }
     }
@@ -551,7 +560,8 @@ const A = {
   acc: d => { S.acc = { ...S.acc, [d.id]: !d.open } },
   adminMode: d => { S.mode = d.m; S.v = d.m == 'admin' ? 'over' : 'class'; if (d.m == 'teach') S.cls = S.d.ct.find(x => x.teacher_id == S.me.id)?.class_id ?? S.cls; },
   addKid: () => { S.v = 'kid'; S.scrollTo = 'addkid'; S.acc = { ...S.acc, a: true } },
-  thread: d => { S.thread = d.id ? +d.id : null; if (d.go) S.v = d.go },
+  thread: d => { S.thread = d.id ? +d.id : null; if (d.go) { S.v = d.go; const k = byId(S.d.children, S.thread); S.ch = S.role == 'admin' && !S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == k?.class_id) ? 'office' : 'class' } },
+  ch: d => { S.ch = d.ch; S.thread = null },
   week: d => { S.week = +d.i },
   mode: () => { S.reg = !S.reg; S.forgot = false },
   forgotMode: () => { S.forgot = !S.forgot; S.reg = false },
@@ -739,7 +749,7 @@ const F = {
     await q(sb.from('children').insert(rows)); toast(`Pridaných detí: ${rows.length}`)
   },
   addChild: async fd => { await q(sb.from('children').insert({ name: fd.name.trim(), class_id: +fd.cls })); toast('Dieťa pridané') },
-  send: async (fd, f) => { await q(sb.from('messages').insert({ child_id: +f.dataset.child, body: fd.t.trim() })) },
+  send: async (fd, f) => { await q(sb.from('messages').insert({ child_id: +f.dataset.child, channel: f.dataset.ch || 'class', body: fd.t.trim() })) },
   addPick: async (fd, f) => { await q(sb.from('pickups').insert({ child_id: +f.dataset.child, name: fd.n.trim(), relation: fd.r.trim() })); toast('Pridané · odovzdajte písomné splnomocnenie v MŠ') },
   publish: async () => {
     const d = S.draft, row = { class_id: d.scope == 'all' ? null : +d.scope, type: d.type, title: d.title.trim(), body: d.text.trim(), require_read: d.req, pinned: d.pin, poll_options: null, event_date: null }

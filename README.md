@@ -96,6 +96,7 @@ Kto dostane upozornenie:
 - **Security Advisor (migrácia `…_skryte_pomocne_funkcie.sql`):** pomocné funkcie práv sú v schéme `private`. Zostanú len upozornenia na funkcie, ktoré platforma volá zámerne (porcie, push, schválenie dieťaťa), tie si rolu kontrolujú samy. „Leaked password protection“ sa zapína v Authentication → Sign In / Providers → Email (vyžaduje plán Pro).
 - **Navigácia vedenia:** na počítači bočný panel s ikonkami v skupinách (Dnes, Obsah, Škôlka, Správa), na mobile dolná lišta, ktorú možno posúvať do strán.
 - **Zmena mena (migrácia `…_zmena_mena.sql`):** každý si ho zmení v Menu → Nastavenia a meno, vedenie mení mená všetkým v Používatelia → Ľudia.
+- **Kanály správ (migrácia `…_kanaly_sprav.sql`):** rodič píše buď učiteľke (kanál Učiteľka), alebo riaditeľke (kanál Riaditeľka). Riaditeľka číta triednu konverzáciu len tam, kde učí, učiteľky kanál riaditeľky nevidia.
 - Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
 
 ## Pravidlá zo školského poriadku
