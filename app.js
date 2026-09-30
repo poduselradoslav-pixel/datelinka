@@ -55,7 +55,7 @@ const none = Promise.resolve({ data: [] })
 const sources = r => ({
   classes: () => sb.from('classes').select('*').order('sort'),
   ct: () => sb.from('class_teachers').select('*'),
-  profiles: () => sb.from('profiles').select('id, full_name, email, role, approved, blocked, requested_child'),
+  profiles: () => sb.from('profiles').select('id, full_name, email, phone, role, approved, blocked, requested_child'),
   posts: () => sb.from('posts').select('*').order('created_at', { ascending: false }).limit(S.postLimit || 100),
   reads: () => sb.from('post_reads').select('post_id, user_id'),
   votes: () => sb.from('poll_votes').select('post_id, user_id, choice'),
@@ -189,7 +189,8 @@ V.privacy = () => `${S.me.approved ? '' : logo()}<header class="row"><button cla
 V.login = () => `<div style="margin-top:10vh">${logo()}</div>${S.reg
   ? `<form class="card" data-a="register"><h2 style="font-size:20px">Registrácia rodiča</h2>
      <label class="f">Vaše meno a priezvisko<input name="name" autocomplete="name" required></label>
-     <label class="f">Meno dieťaťa<input name="child" required placeholder="napr. Ema Kováčová"></label>
+     <label class="f">Meno a priezvisko dieťaťa<input name="child" required placeholder="napr. Ema Kováčová"><span class="mute">Zadajte ho tak, ako je v rodnom liste (nie zdrobneninu). Riaditeľka podľa toho dieťa priradí.</span></label>
+     <label class="f">Vaše telefónne číslo<input name="phone" type="tel" autocomplete="tel" required minlength="9" maxlength="20" placeholder="+421 9xx xxx xxx"><span class="mute">Uloží sa ako váš núdzový kontakt, nemusíte ho zadávať znova.</span></label>
      <label class="f">E-mail<input name="email" type="email" autocomplete="email" required></label>
      <label class="f">Heslo (aspoň 8 znakov)<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
      <label class="row" style="align-items:flex-start"><input type="checkbox" name="gdpr" required style="margin-top:2px"><span style="font-size:14px">Súhlasím so spracúvaním údajov mojich a dieťaťa na účely platformy.</span></label>
@@ -291,11 +292,13 @@ V.users = () => {
   const tab = S.utab ?? (pending.length ? 'pending' : 'people'), tl = [['pending', `Čakajúci${pending.length + S.d.requests.length ? ` (${pending.length + S.d.requests.length})` : ''}`], ['people', 'Ľudia'], ['kids', 'Deti'], ['admin', 'Správa']]
   const T = {
     pending: ` <div class="lbl">Čakajú na schválenie (${pending.length})</div>
- ${pending.map(p => { const hit = S.d.children.filter(k => p.requested_child && matches(p.requested_child, k.name))
-    return `<form class="card" data-a="approve" data-id="${p.id}"><div class="row sp" style="flex-wrap:wrap"><div><b>${esc(p.full_name || '–')}</b> <span class="mute">${esc(p.email)}</span></div><span class="pill ${hit.length ? 'g' : 'o'}">${hit.length ? `zhoda: ${hit.length}` : 'bez zhody'}</span></div>
-   <div>Uvedené dieťa: <b>${esc(p.requested_child || '–')}</b></div>
-   <div class="f">Priradiť k dieťaťu<div class="chips">${S.d.children.map(k => `<label class="chip ${hit.includes(k) ? 'on' : ''}"><input type="checkbox" name="child" value="${k.id}" ${hit.includes(k) ? 'checked' : ''} style="width:16px;height:16px;margin-right:6px;vertical-align:-2px">${esc(k.name)} <span class="mute">${esc(cls(k.class_id).name)}</span></label>`).join('') || '<span class="mute">Najprv pridajte deti nižšie.</span>'}</div></div>
-   <div class="row" style="flex-wrap:wrap;align-items:flex-end"><label class="f">Rola<select name="role" style="${sel}">${Object.entries(ROLE).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+ ${pending.map(p => { const hit = S.d.children.filter(k => p.requested_child && matches(p.requested_child, k.name)), rest = S.d.children.filter(k => !hit.includes(k))
+    const chip = (k, on) => { const gs = S.d.guardians.filter(g => g.child_id == k.id).map(g => pname(g.parent_id)); return `<label class="chip ${on ? 'on' : ''}"><input type="checkbox" name="child" value="${k.id}" ${on ? 'checked' : ''} style="width:16px;height:16px;margin-right:6px;vertical-align:-2px">${esc(k.name)} <span class="mute">${esc(cls(k.class_id).name)}${gs.length ? ' · už: ' + esc(gs.join(', ')) : ''}</span></label>` }
+    return `<form class="card" data-a="approve" data-id="${p.id}"><div><b>${esc(p.full_name || '–')}</b> <span class="mute">${esc(p.email)}${p.phone ? ' · ' + esc(phone(p.phone)) : ''}</span></div>
+   <div>Žiada o dieťa: <b>${esc(p.requested_child || '–')}</b></div>
+   ${hit.length ? `<div class="chips">${hit.map(k => chip(k, true)).join('')}</div>` : '<div class="pill o" style="align-self:flex-start">bez zhody, vyberte dieťa</div>'}
+   <details ${hit.length ? '' : 'open'}><summary class="mute" style="cursor:pointer">${hit.length ? 'Iné dieťa alebo ďalšie' : 'Zoznam detí'}</summary><div class="chips" style="padding-top:8px">${rest.map(k => chip(k, false)).join('') || '<span class="mute">Najprv pridajte deti v záložke Deti.</span>'}</div></details>
+   <div class="row" style="flex-wrap:wrap;align-items:flex-end"><select name="role" aria-label="Rola" style="${sel}">${Object.entries(ROLE).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>
    <button class="btn">Schváliť</button><button type="button" class="btn ghost" style="color:var(--ot)" data-a="block" data-id="${p.id}" data-on="1">Zamietnuť</button></div></form>` }).join('') || '<p class="mute">Nikto nečaká.</p>'}
  ${S.d.requests.length ? `<div class="lbl">Žiadosti o ďalšie dieťa (${S.d.requests.length})</div>${S.d.requests.map(r => { const hit = S.d.children.filter(k => matches(r.child_name, k.name)), rest = S.d.children.filter(k => !hit.includes(k))
     return `<form class="card" data-a="approveReq" data-id="${r.id}" data-p="${r.parent_id}"><div><b>${esc(pname(r.parent_id))}</b> žiada o: <b>${esc(r.child_name)}</b> <span class="pill ${hit.length ? 'g' : 'o'}">${hit.length ? `zhoda: ${hit.length}` : 'bez zhody'}</span></div>
@@ -660,7 +663,7 @@ const F = {
     await boot()
   },
   register: async fd => {
-    const { data, error } = await sb.auth.signUp({ email: fd.email.trim(), password: fd.password, options: { captchaToken: capToken(), data: { full_name: fd.name.trim(), requested_child: fd.child.trim(), gdpr_at: new Date().toISOString() } } })
+    const { data, error } = await sb.auth.signUp({ email: fd.email.trim(), password: fd.password, options: { captchaToken: capToken(), data: { full_name: fd.name.trim(), requested_child: fd.child.trim(), phone: fd.phone.trim(), gdpr_at: new Date().toISOString() } } })
     if (error) throw new Error(/registered/i.test(error.message) ? 'Tento e-mail už je zaregistrovaný.' : error.message)
     if (!data.session) return toast('Potvrďte registráciu odkazom v e-maile.')
     await boot()
