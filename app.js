@@ -123,6 +123,8 @@ const TABLES = { messages: ['msgs'], posts: ['posts'], absences: ['absences', 'm
 const byId = (a, id) => a?.find(x => x.id == id)
 const pname = id => byId(S.d.profiles, id)?.full_name || 'Rodič'
 const cls = id => byId(S.d.classes, id) ?? { name: '–' }
+const myClasses = () => S.role == 'admin' ? S.d.classes : S.d.classes.filter(c => S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == c.id) || kidsIn(c.id).length)   // učiteľka: vlastná trieda a dnešný záskok
+const postClasses = () => S.role == 'admin' ? S.d.classes : S.d.classes.filter(c => S.d.ct.some(x => x.teacher_id == S.me.id && x.class_id == c.id))
 const moveFrom = () => S.moveFrom ?? S.d.classes[0]?.id
 const kidsIn = c => S.d.children.filter(k => k.class_id == c)
 const teachersOf = c => S.d.ct.filter(x => x.class_id == c).map(x => x.teacher_id)
@@ -371,7 +373,7 @@ V.msg = () => {
   const staff = S.role != 'parent'
   if (staff && !S.thread) {
     const ks = kidsIn(S.cls).map(k => ({ k, last: S.d.msgs.find(m => m.child_id == k.id) })).sort((a, b) => (b.last?.created_at ?? '').localeCompare(a.last?.created_at ?? ''))
-    return `${adminTabs()}<h1 style="font-size:24px">Správy · ${esc(cls(S.cls).name)}</h1><div class="chips">${S.d.classes.map(x => `<button class="chip ${x.id == S.cls ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div><div class="card list" style="padding-block:4px">${ks.map(({ k, last }) => `<div><button class="btn ghost" style="width:100%;text-align:left;color:var(--ink)" data-a="thread" data-id="${k.id}"><b>${esc(k.name)}</b>${badge(unread(k.id))}<div class="mute">${last ? esc(last.body.slice(0, 60)) + ' · ' + time(last.created_at) : 'bez správ'}</div></button></div>`).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>`
+    return `${adminTabs()}<h1 style="font-size:24px">Správy · ${esc(cls(S.cls).name)}</h1><div class="chips">${myClasses().map(x => `<button class="chip ${x.id == S.cls ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div><div class="card list" style="padding-block:4px">${ks.map(({ k, last }) => `<div><button class="btn ghost" style="width:100%;text-align:left;color:var(--ink)" data-a="thread" data-id="${k.id}"><b>${esc(k.name)}</b>${badge(unread(k.id))}<div class="mute">${last ? esc(last.body.slice(0, 60)) + ' · ' + time(last.created_at) : 'bez správ'}</div></button></div>`).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>`
   }
   const k = byId(S.d.children, staff ? S.thread : S.child)
   if (!k) return '<p class="mute">Nemáte priradené dieťa.</p>'
@@ -422,7 +424,7 @@ V.class = () => {
    ${es.map((e, i) => `<div>${i + 1}. ${esc(e.name)} <span class="mute">${esc(e.relation)}</span> · <a href="${esc(tel(e.phone))}">${esc(phone(e.phone))}</a></div>`).join('') || '<div class="mute">Rodič nezadal núdzové kontakty.</div>'}
    ${hasHealth ? [['Alergie', h.allergies], ['Ochorenia', h.chronic], ['Lieky', h.medication], ['Diéta', h.diet]].filter(x => x[1]).map(([l, v]) => `<div><b>${l}:</b> ${esc(v)}</div>`).join('') : ''}</div>` }
   return `${adminTabs()}<header class="row sp" style="align-items:flex-end"><div><div class="mute" style="font-weight:600">${sk(S.day)}${S.day != TODAY ? ' · oprava dochádzky' : ''}</div><h1 style="font-size:28px">${esc(c.name)}</h1></div><label><span class="sr">Deň</span><input type="date" data-c="day" max="${TODAY}" value="${S.day}" style="width:auto;min-height:40px;padding:6px 10px"></label></header>
- <div class="chips">${S.d.classes.map(x => `<button class="chip ${x.id == S.cls ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
+ <div class="chips">${myClasses().map(x => `<button class="chip ${x.id == S.cls ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
  ${subs.map(x => `<div class="banner" style="background:var(--b);color:var(--bt)"><b>Záskok:</b> trieda ${esc(classOf(x.teacher_id).name)} za ${esc(pname(x.teacher_id))}.</div>`).join('')}
  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${tile(n('ok') + '/' + rows.length, 'prítomní')}${tile(n('abs') + n('miss'), 'chýbajú')}${tile(n('new'), 'nespracované', late && n('new'))}</div>
  <div class="ktiles">${rows.map(r => { const hasHealth = S.d.health.some(x => x.child_id == r.k.id && (x.allergies || x.chronic || x.medication || x.diet))
@@ -432,8 +434,8 @@ V.class = () => {
 }
 
 V.posts = () => {
-  const d = S.draft ??= { scope: S.cls ?? 'all', type: 'oznam', title: '', text: '', opts: '', date: NEXT, req: true, pin: false }
-  const scopes = [...S.d.classes.map(c => [c.id, c.name]), ['all', 'Celá MŠ']]
+  const d = S.draft ??= { scope: S.role == 'admin' ? S.cls ?? 'all' : postClasses()[0]?.id ?? '', type: 'oznam', title: '', text: '', opts: '', date: NEXT, req: true, pin: false }
+  const scopes = [...postClasses().map(c => [c.id, c.name]), ...(S.role == 'admin' ? [['all', 'Celá MŠ']] : [])]   // celej MŠ píše len vedenie
   return `${adminTabs()}<h1 style="font-size:24px">${d.id ? 'Upraviť oznam' : 'Nový oznam'}</h1><form class="card" data-a="publish">
   <div class="f">Komu<div class="chips">${scopes.map(([v, l]) => `<button type="button" class="chip ${d.scope == v ? 'on' : ''}" data-a="draft" data-k="scope" data-val="${v}">${esc(l)}</button>`).join('')}</div></div>
   <div class="f">Typ<div class="chips">${Object.entries(TYPES).map(([v, l]) => `<button type="button" class="chip ${d.type == v ? 'on' : ''}" data-a="draft" data-k="type" data-val="${v}">${l}</button>`).join('')}</div></div>
@@ -732,6 +734,8 @@ function render() {
     S.wizChecked = true
     const g = gaps()[0]; if (g) { S.child = g[0].id; S.v = 'wizard' }
   }
+  const OK = { parent: ['board', 'cal', 'msg', 'pay', 'kid', 'absence', 'wizard'], teacher: ['class', 'posts', 'msg', 'cal', 'absence'], kitchen: ['kitchen'], admin: [...ADMINV, 'class', 'posts', 'msg', 'cal', 'absence', 'mfa'] }
+  if (S.me.approved && !['password', 'settings', 'mfaVerify', 'pending'].includes(S.v) && !(OK[S.role] || []).includes(S.v)) S.v = DEF[S.role]   // obrazovka musí patriť role
   const view = S.mfaPending ? 'mfaVerify' : S.recovery ? 'password' : S.me.approved || S.v == 'password' ? S.v : 'pending'
   const NARROW = ['posts', 'class', 'msg', 'cal', 'absence', 'password', 'settings', 'mfa']   // vedeniu ich vycentrujeme do užšieho stĺpca, hlavička ostáva široká
   const wide = S.role == 'admin' || S.role == 'kitchen' && !['password', 'settings'].includes(view)
@@ -846,6 +850,7 @@ async function boot() {
   if (!session) return
   S.me = await q(sb.from('profiles').select('*').eq('id', session.user.id).single())
   try { S.mode ??= localStorage.getItem('mode') } catch {}
+  if (S.role && S.role != S.me.role) return location.reload()   // zmenila sa rola: nový začiatok, žiadna stará obrazovka
   S.role = S.me.role; S.v = S.me.approved && !S.me.blocked ? (S.v && S.v != 'pending' ? S.v : DEF[S.role]) : 'pending'
   if (S.me.blocked) S.me.approved = false
   S.mfaPending = false

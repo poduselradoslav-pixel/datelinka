@@ -88,6 +88,7 @@ Kto dostane upozornenie:
 - **Ďalšie dieťa (migrácia `…_dalsie_dieta.sql`):** po potvrdení sa prevezmú zákonní zástupcovia, osoby na vyzdvihnutie a núdzové kontakty z prvého dieťaťa.
 - **Odovzdanie vedenia:** Používatelia → Odovzdať vedenie. Riaditeľka s vlastnou triedou má prepínač Moja trieda / Správa škôlky.
 - **Dochádzka (migrácia `…_dochadzka_potvrdenie.sql`):** trieda je mriežka polí. Červené = odhlásené/chýba, zelené = potvrdené učiteľkou, oranžové = nespracované (po 8:00 sa ťuknutím otvoria možnosti).
+- **Práva rolí (migrácia `…_prava_rol.sql`):** učiteľka vidí len deti svojej triedy (a triedy, kde má dnes záskok) a píše oznamy len svojej triede, celej MŠ píše vedenie. Nedá sa odobrať posledný aktívny admin.
 - Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
 
 ## Pravidlá zo školského poriadku
