@@ -145,7 +145,7 @@ const badge = n => n ? ` <span class="pill o" style="padding:1px 7px">${n}</span
 // ---------- UI kúsky ----------
 const I = { home: '<path d="M4 10l8-6 8 6v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>', cal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>', chat: '<path d="M5 5h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 3V6a1 1 0 0 1 1-1z"/>', kid: '<circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', ok: '<path d="M5 12l5 5 9-10"/>', group: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c1-3 3.5-5 6-5s5 2 6 5M15 14.5c2.5 0 4.5 1.5 5.5 4"/>', mega: '<path d="M4 10v4h3l7 5V5L7 10z"/><path d="M18 9a4 4 0 0 1 0 6"/>', back: '<path d="M15 5l-7 7 7 7"/>', bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/>', card: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>' }
 const ic = n => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`
-const TABS = { parent: [['board', 'Nástenka', 'home'], ['cal', 'Kalendár', 'cal'], ['msg', 'Správy', 'chat'], ['pay', 'Platby', 'card'], ['kid', 'Dieťa', 'kid']], teacher: [['class', 'Trieda', 'group'], ['posts', 'Oznamy', 'mega'], ['msg', 'Správy', 'chat'], ['cal', 'Kalendár', 'cal']], admin: [['over', 'Prehľad'], ['class', 'Trieda'], ['msg', 'Správy'], ['cal', 'Kalendár'], ['users', 'Používatelia'], ['staff', 'Personál'], ['report', 'Výkaz'], ['kitchen', 'Kuchyňa'], ['posts', 'Oznamy']] }
+const TABS = { parent: [['board', 'Nástenka', 'home'], ['cal', 'Kalendár', 'cal'], ['msg', 'Správy', 'chat'], ['kid', 'Dieťa', 'kid']], teacher: [['class', 'Trieda', 'group'], ['posts', 'Oznamy', 'mega'], ['msg', 'Správy', 'chat'], ['cal', 'Kalendár', 'cal']], admin: [['over', 'Prehľad'], ['class', 'Trieda'], ['msg', 'Správy'], ['cal', 'Kalendár'], ['users', 'Používatelia'], ['staff', 'Personál a výkaz'], ['kitchen', 'Kuchyňa'], ['posts', 'Oznamy']] }
 const logo = () => `<div class="row"><img src="icon-192.png" width="36" height="36" alt=""><div><div class="disp" style="font-size:22px">Ďatelinka</div><div class="mute" style="font-size:12px">Materská škola Zvolen</div></div></div>`
 const lock = (t, d) => `<div class="lock">${ic('lock')}<div><div class="row" style="gap:8px"><b>${t}</b><span class="gdpr">Podlieha GDPR</span></div><div class="mute" style="margin-top:4px">${d}</div></div></div>`
 const adminTabs = () => { if (S.role != 'admin') return ''; const t = teachMode() && !ADMINV.includes(S.v), mine = S.d?.ct?.some(x => x.teacher_id == S.me.id), sw = mine ? `<button class="chip" style="border-style:dashed" data-a="adminMode" data-m="${t ? 'admin' : 'teach'}">${t ? 'Správa škôlky ›' : 'Moja trieda ›'}</button>` : ''
@@ -178,12 +178,22 @@ function post(p) {
 
 // ---------- obrazovky ----------
 const V = {}
+const PRIVACY = `<div style="display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.45">
+ <div><b>Kto údaje spracúva:</b> Materská škola Ďatelinka, J. Bánika 1733/41, Zvolen.</div>
+ <div><b>Prečo:</b> komunikácia s rodičmi (oznamy, správy), odhlasovanie zo stravy a evidencia neprítomnosti a príchodov, bezpečné vyzdvihnutie dieťaťa a núdzové kontakty.</div>
+ <div><b>Aké údaje:</b> meno a e-mail rodiča, meno a trieda dieťaťa, osoby oprávnené vyzdvihnúť dieťa, núdzové kontakty, dochádzka a správy. Zdravotné údaje (alergie, diéta) sa zapnú až po schválení škôlkou a zadávate ich dobrovoľne.</div>
+ <div><b>Ako dlho:</b> údaje dieťaťa sa po jeho odchode zmažú do 30 dní, upozornenia v platforme po 7 dňoch.</div>
+ <div><b>Komu sa sprístupňujú:</b> učiteľkám a vedeniu škôlky, dieťaťa sa týkajú len učiteľky jeho triedy. Údaje sú uložené v EÚ (Frankfurt) u poskytovateľa Supabase, stránka beží na GitHub Pages. Nikomu ďalšiemu ich neposkytujeme.</div>
+ <div><b>Vaše práva:</b> požiadať o prístup k údajom, opravu, vymazanie alebo obmedzenie spracúvania, a podať sťažnosť Úradu na ochranu osobných údajov SR. Ozvite sa riaditeľke: <a href="tel:+421917287813">+421 917 287 813</a>.</div></div>`
+V.privacy = () => `${S.me.approved ? '' : logo()}<header class="row"><button class="btn ghost" aria-label="Späť" data-a="go" data-v="${S.me.approved ? DEF[S.role] : 'pending'}">${ic('back')}</button><h1 style="font-size:22px">Ochrana osobných údajov</h1></header><div class="card">${PRIVACY}</div>`
 V.login = () => `<div style="margin-top:10vh">${logo()}</div>${S.reg
   ? `<form class="card" data-a="register"><h2 style="font-size:20px">Registrácia rodiča</h2>
      <label class="f">Vaše meno a priezvisko<input name="name" autocomplete="name" required></label>
      <label class="f">Meno dieťaťa<input name="child" required placeholder="napr. Ema Kováčová"></label>
      <label class="f">E-mail<input name="email" type="email" autocomplete="email" required></label>
      <label class="f">Heslo (aspoň 8 znakov)<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+     <label class="row" style="align-items:flex-start"><input type="checkbox" name="gdpr" required style="margin-top:2px"><span style="font-size:14px">Súhlasím so spracúvaním údajov mojich a dieťaťa na účely platformy.</span></label>
+     <details><summary class="mute" style="cursor:pointer">Zásady ochrany osobných údajov</summary><div style="padding-top:8px">${PRIVACY}</div></details>
      ${captcha()}<button class="btn">Zaregistrovať sa</button><div class="mute">Účet schváli riaditeľka a priradí vám dieťa. Dovtedy v platforme nič neuvidíte.</div>
      <button type="button" class="btn ghost" data-a="mode">Už mám účet</button></form>`
   : S.forgot
@@ -278,7 +288,8 @@ V.users = () => {
   const P = S.d.profiles, pending = P.filter(p => !p.approved && !p.blocked), active = P.filter(p => p.approved && !p.blocked), blocked = P.filter(p => p.blocked)
   const parents = active.filter(p => p.role == 'parent'), sel = 'min-height:38px;padding:4px 8px;font-size:13px;width:auto'
   const kidsOf = id => S.d.guardians.filter(g => g.parent_id == id).map(g => byId(S.d.children, g.child_id)?.name).filter(Boolean)
-  return adminTabs() + `<h1 style="font-size:28px">Používatelia</h1>
+  const uq = norm(S.uq ?? ''), hitU = p => !uq || norm(`${p.full_name ?? ''} ${p.email} ${kidsOf(p.id).join(' ')}`).includes(uq), hitK = k => !uq || norm(k.name).includes(uq) || S.d.guardians.some(g => g.child_id == k.id && hitU(byId(P, g.parent_id) ?? {}))
+  return adminTabs() + `<h1 style="font-size:28px">Používatelia</h1><input data-c="uq" aria-label="Hľadať" placeholder="Hľadať meno, e-mail alebo dieťa" value="${esc(S.uq ?? '')}">
  <div class="lbl">Čakajú na schválenie (${pending.length})</div>
  ${pending.map(p => { const hit = S.d.children.filter(k => p.requested_child && matches(p.requested_child, k.name))
     return `<form class="card" data-a="approve" data-id="${p.id}"><div class="row sp" style="flex-wrap:wrap"><div><b>${esc(p.full_name || '–')}</b> <span class="mute">${esc(p.email)}</span></div><span class="pill ${hit.length ? 'g' : 'o'}">${hit.length ? `zhoda: ${hit.length}` : 'bez zhody'}</span></div>
@@ -295,11 +306,12 @@ V.users = () => {
    <label class="f">Moja nová rola<select name="role">${Object.entries(ROLE).filter(([v]) => v != 'admin').map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label><button class="btn out">Odovzdať</button></div>
    <div class="mute">Vybraný používateľ dostane rolu Vedenie, vám sa nastaví zvolená rola (deti a kontakty zostanú). Nový vedúci si má potom zapnúť dvojfaktorové prihlásenie.</div></form>
  <div class="lbl">Aktívni (${active.length})</div>
- <div class="card" style="overflow-x:auto"><table><tr><th>Meno</th><th>E-mail</th><th>Rola</th><th>Deti</th><th></th></tr>${active.map(p => `<tr><td>${esc(p.full_name || '–')}</td><td class="mute">${esc(p.email)}</td>
+ <div class="card" style="overflow-x:auto"><table><tr><th>Meno</th><th>E-mail</th><th>Rola</th><th>Deti</th><th></th></tr>${active.filter(hitU).map(p => `<tr><td>${esc(p.full_name || '–')}</td><td class="mute">${esc(p.email)}</td>
   <td>${p.id == S.me.id ? ROLE[p.role] : `<select aria-label="Rola" data-c="role" data-id="${p.id}" style="${sel}">${Object.entries(ROLE).map(([v, l]) => `<option value="${v}" ${p.role == v ? 'selected' : ''}>${l}</option>`).join('')}</select>`}</td>
   <td>${kidsOf(p.id).map(esc).join(', ') || (p.role == 'parent' ? '<span class="mute">žiadne</span>' : '')}</td>
   <td>${p.id == S.me.id ? '' : `<button class="btn ghost" style="color:var(--ot)" data-a="block" data-id="${p.id}" data-on="1">Deaktivovať</button>`}</td></tr>`).join('')}</table></div>
  ${blocked.length ? `<div class="lbl">Zamietnutí a deaktivovaní</div><div class="card list" style="padding-block:4px">${blocked.map(p => `<div class="row"><span class="grow">${esc(p.full_name || '–')} <span class="mute">${esc(p.email)}</span></span><button class="btn ghost" data-a="block" data-id="${p.id}" data-on="">Obnoviť</button></div>`).join('')}</div>` : ''}
+ <div class="card row sp"><div><b>Záloha dát</b><div class="mute">Stiahne súbor so všetkými údajmi (bez zdravotných). Odporúčame raz týždenne.</div></div><button class="btn out" data-a="backup">Stiahnuť</button></div>
  <div class="lbl">Deti (${S.d.children.length})</div>
  <form class="card row" data-a="addChild" style="flex-direction:row;flex-wrap:wrap;align-items:flex-end"><label class="f grow">Meno dieťaťa<input name="name" required></label><label class="f">Trieda<select name="cls">${S.d.classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><button class="btn">Pridať dieťa</button></form>
  <div class="cols">
@@ -312,7 +324,7 @@ V.users = () => {
    <textarea name="list" rows="4" placeholder="Ema Kováčová; Lienky&#10;Adam Novák; Kvietky" required></textarea>
    <label class="f">Trieda pre riadky bez triedy<select name="dc"><option value="">— triedu uvediem v riadku —</option>${S.d.classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label>
    <button class="btn out">Pridať deti</button><div class="mute">Jedno dieťa na riadok. Za menom môže byť bodkočiarka, čiarka alebo tabulátor a trieda (stačí začiatok názvu). Ak triedu neuvediete, použije sa tá vybraná vyššie.</div></form></div>
- <div class="card" style="overflow-x:auto"><table><tr><th>Dieťa</th><th>Trieda</th><th>Rodičia</th><th></th></tr>${S.d.children.map(k => { const gs = S.d.guardians.filter(g => g.child_id == k.id)
+ <div class="card" style="overflow-x:auto"><table><tr><th>Dieťa</th><th>Trieda</th><th>Rodičia</th><th></th></tr>${S.d.children.filter(hitK).map(k => { const gs = S.d.guardians.filter(g => g.child_id == k.id)
     return `<tr><td><input aria-label="Meno" data-c="kname" data-id="${k.id}" value="${esc(k.name)}" style="min-height:38px;padding:4px 8px;min-width:150px"></td>
   <td><select aria-label="Trieda" data-c="kcls" data-id="${k.id}" style="${sel}">${S.d.classes.map(c => `<option value="${c.id}" ${k.class_id == c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></td>
   <td><div class="chips">${gs.map(g => `<span class="chip" style="cursor:default">${esc(pname(g.parent_id))} <button class="btn ghost" style="padding:0 0 0 6px;color:var(--ot)" aria-label="Odobrať rodiča" data-a="unlink" data-child="${k.id}" data-p="${g.parent_id}">×</button></span>`).join('')}
@@ -427,6 +439,7 @@ V.class = () => {
  <div class="chips">${myClasses().map(x => `<button class="chip ${x.id == S.cls ? 'on' : ''}" data-a="cls" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div>
  ${subs.map(x => `<div class="banner" style="background:var(--b);color:var(--bt)"><b>Záskok:</b> trieda ${esc(classOf(x.teacher_id).name)} za ${esc(pname(x.teacher_id))}.</div>`).join('')}
  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${tile(n('ok') + '/' + rows.length, 'prítomní')}${tile(n('abs') + n('miss'), 'chýbajú')}${tile(n('new'), 'nespracované', late && n('new'))}</div>
+ ${n('new') > 1 ? `<button class="btn out" data-a="attAll">Všetci nespracovaní sú prítomní (${n('new')})</button>` : ''}
  <div class="ktiles">${rows.map(r => { const hasHealth = S.d.health.some(x => x.child_id == r.k.id && (x.allergies || x.chronic || x.medication || x.diet))
     return `<button class="ktile ${{ abs: 'red', miss: 'red', ok: 'green', new: late ? 'orange late' : 'orange' }[r.s]} ${S.sel == r.k.id ? 'sel' : ''}" data-a="tile" data-id="${r.k.id}"><b>${esc(r.k.name)}</b><span>${{ abs: 'Odhlásený', miss: 'Chýba', ok: 'Prítomný', new: late ? 'Nespracované' : 'Potvrdiť' }[r.s]}${hasHealth ? ' · zdravie' : ''}</span></button>` }).join('') || '<div class="mute">V triede nie sú deti.</div>'}</div>
  ${panel(sel)}
@@ -456,7 +469,7 @@ V.over = () => adminTabs() + `<h1 style="font-size:28px">Prehľad · ${sk(TODAY)
   return `<div class="card"><div class="row sp"><b style="font-size:17px">${esc(c.name)}</b>${cnt('miss') ? `<span class="pill o">${cnt('miss')} neohlásené</span>` : ''}</div><div class="disp" style="font-size:32px;color:var(--g)">${cnt('ok')}<span class="mute" style="font-size:16px"> / ${ss.length} prítomných</span></div><div class="mute">${cnt('abs')} odhlásené${cnt('new') ? ` · ${cnt('new')} nespracované` : ''} · ${teachersOf(c.id).map(t => esc(pname(t)) + (S.d.staff.some(x => x.teacher_id == t && x.day == TODAY) ? ' (nie je)' : '')).join(', ')}</div></div>` }).join('')}</div>
  <div class="card"><div class="lbl">Na vyriešenie</div>${todo()}</div>`
 
-V.staff = () => {
+const staff0 = () => {
   const wk = [0, 1, 2, 3, 4].map(i => add(MON, i)), ts = teachers()
   const subFor = (t, d) => S.d.staff.filter(x => x.substitute_id == t && x.day == d).map(x => ' + ' + esc(classOf(x.teacher_id).name)).join('')
   return adminTabs() + `<h1 style="font-size:28px">Personál · týždeň od ${sk(MON)}</h1><div class="card" style="overflow-x:auto"><table><tr><th>Učiteľka</th>${wk.map(d => `<th>${sk(d)}</th>`).join('')}</tr>
@@ -467,6 +480,7 @@ V.staff = () => {
  <div class="mute">Klik na bunku = neprítomnosť. Dôvod sa neeviduje, len trvanie.</div></div><div class="card"><div class="lbl">Na vyriešenie</div>${todo()}</div>`
 }
 
+V.staff = () => { const r = V.report(); return staff0() + r.slice(adminTabs().length) }   // personál a výkaz na jednej obrazovke
 V.report = () => {
   const month = S.repMonth + '-01', last = iso(new Date(dt(month).getFullYear(), dt(month).getMonth() + 1, 0))
   const wd = days(month, last).filter(d => d <= TODAY)
@@ -608,6 +622,19 @@ const A = {
     await q(sb.from('staff_absences').update({ substitute_id: null }).eq('substitute_id', d.t).eq('day', d.d)) // neprítomná nemôže zastupovať
   },
   rmClosed: async d => { await q(sb.from('closed_days').delete().eq('day', d.day)); toast('Zrušené') },
+  backup: async () => {   // všetko okrem zdravotných údajov, do jedného súboru
+    const out = { vytvorene: new Date().toISOString() }
+    for (const t of ['classes', 'class_teachers', 'profiles', 'children', 'guardians', 'pickups', 'emergency_contacts', 'absences', 'attendance', 'posts', 'menu', 'closed_days', 'staff_absences', 'messages']) {
+      out[t] = []
+      for (let i = 0; ; i += 1000) { const r = await q(sb.from(t).select('*').range(i, i + 999)); out[t].push(...r); if (r.length < 1000) break }
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' })); a.download = `datelinka-zaloha-${TODAY}.json`; a.click()
+    toast('Záloha stiahnutá')
+  },
+  attAll: async () => {   // všetci nespracovaní = prítomní
+    const ids = kidsIn(S.cls).filter(k => status(k.id, S.day).s == 'new').map(k => ({ child_id: k.id, day: S.day, kind: 'present' }))
+    if (ids.length) await q(sb.from('attendance').insert(ids))
+  },
   csv: () => {
     const t = [['Trieda', 'Dieťa', 'Pracovné dni', 'Neprítomný', 'Prítomný'], ...S.rep.map(r => [...r, r[2] - r[3]])].map(r => r.join(';')).join('\n')
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + t], { type: 'text/csv' })); a.download = `dochadzka-${S.repMonth}.csv`; a.click()
@@ -620,7 +647,7 @@ const F = {
     await boot()
   },
   register: async fd => {
-    const { data, error } = await sb.auth.signUp({ email: fd.email.trim(), password: fd.password, options: { captchaToken: capToken(), data: { full_name: fd.name.trim(), requested_child: fd.child.trim() } } })
+    const { data, error } = await sb.auth.signUp({ email: fd.email.trim(), password: fd.password, options: { captchaToken: capToken(), data: { full_name: fd.name.trim(), requested_child: fd.child.trim(), gdpr_at: new Date().toISOString() } } })
     if (error) throw new Error(/registered/i.test(error.message) ? 'Tento e-mail už je zaregistrovaný.' : error.message)
     if (!data.session) return toast('Potvrďte registráciu odkazom v e-maile.')
     await boot()
@@ -735,9 +762,9 @@ function render() {
     const g = gaps()[0]; if (g) { S.child = g[0].id; S.v = 'wizard' }
   }
   const OK = { parent: ['board', 'cal', 'msg', 'pay', 'kid', 'absence', 'wizard'], teacher: ['class', 'posts', 'msg', 'cal', 'absence'], kitchen: ['kitchen'], admin: [...ADMINV, 'class', 'posts', 'msg', 'cal', 'absence', 'mfa'] }
-  if (S.me.approved && !['password', 'settings', 'mfaVerify', 'pending'].includes(S.v) && !(OK[S.role] || []).includes(S.v)) S.v = DEF[S.role]   // obrazovka musí patriť role
+  if (S.me.approved && !['password', 'settings', 'privacy', 'mfaVerify', 'pending'].includes(S.v) && !(OK[S.role] || []).includes(S.v)) S.v = DEF[S.role]   // obrazovka musí patriť role
   const view = S.mfaPending ? 'mfaVerify' : S.recovery ? 'password' : S.me.approved || S.v == 'password' ? S.v : 'pending'
-  const NARROW = ['posts', 'class', 'msg', 'cal', 'absence', 'password', 'settings', 'mfa']   // vedeniu ich vycentrujeme do užšieho stĺpca, hlavička ostáva široká
+  const NARROW = ['posts', 'class', 'msg', 'cal', 'absence', 'password', 'settings', 'mfa', 'privacy']   // vedeniu ich vycentrujeme do užšieho stĺpca, hlavička ostáva široká
   const wide = S.role == 'admin' || S.role == 'kitchen' && !['password', 'settings'].includes(view)
   app.className = wide ? 'wide' : ''
   bar.className = wide ? 'wide' : ''
@@ -755,7 +782,7 @@ function render() {
     ${S.d.notes?.length ? S.d.notes.map(x => `<button class="note ${x.read_at ? '' : 'new'}" data-a="note" data-id="${x.id}"><b>${esc(x.title)}</b>${x.body ? `<span>${esc(x.body)}</span>` : ''}<small>${time(x.created_at)}</small></button>`).join('') : '<div class="mute" style="padding:10px 0">Zatiaľ nič nové.</div>'}
     <button class="btn ghost" data-a="go" data-v="settings">Nastavenia upozornení</button></div>`
     : S.menu ? `<div class="pop"><div class="mute" style="padding-bottom:6px">${esc(S.me.email)} · ${ROLE[S.role]}</div>
-    ${S.me.approved && !S.mfaPending ? '<button data-a="go" data-v="settings">Nastavenie upozornení</button>' : ''}${S.role == 'admin' && S.me.approved && !S.mfaPending ? '<button data-a="mfaOpen">Dvojfaktorové prihlásenie</button>' : ''}
+    ${S.me.approved && !S.mfaPending ? '<button data-a="go" data-v="settings">Nastavenie upozornení</button>' : ''}<button data-a="go" data-v="privacy">Ochrana osobných údajov</button>${S.role == 'admin' && S.me.approved && !S.mfaPending ? '<button data-a="mfaOpen">Dvojfaktorové prihlásenie</button>' : ''}
     <div class="lbl" style="padding:8px 0 4px">Vzhľad</div><div class="chips">${THEMES.map(([m, l]) => `<button class="chip ${window.theme?.get() == m ? 'on' : ''}" data-a="theme" data-m="${m}">${l}</button>`).join('')}</div>
     <button data-a="go" data-v="password">Zmeniť heslo</button><button data-a="logout">Odhlásiť sa</button></div>` : ''
   bar.innerHTML = `<div class="bi"><span style="margin-right:auto"><b>${esc(S.me.full_name || S.me.email)}</b> · ${ROLE[S.role]}</span>${S.me.approved && !S.mfaPending ? `<button class="bell" data-a="bell" aria-label="Upozornenia">${ic('bell')}${cnt ? `<i>${cnt}</i>` : ''}</button>` : ''}<button data-a="menu" aria-haspopup="true" aria-expanded="${S.menu}">Menu ▾</button></div>${pop}`
@@ -780,7 +807,7 @@ document.addEventListener('click', e => {
 })
 document.addEventListener('submit', e => { e.preventDefault(); const f = e.target; run(async () => { await F[f.dataset.a](Object.fromEntries(new FormData(f)), f); f.reset() }) })
 document.addEventListener('focusin', e => { const el = e.target; if (el.name?.includes('|') && S.menuCell != el.name) { S.menuCell = el.name; const b = document.getElementById('algbar'); if (b) b.innerHTML = algBar() } })
-document.addEventListener('input', e => { const el = e.target; if (el.name?.includes('|')) (S.menuDraft ??= {})[el.name] = el.value; if (el.dataset.c == 'note') S.form.note = el.value; if (el.dataset.d && el.type != 'checkbox' && el.type != 'date') S.draft[el.dataset.d] = el.value })
+document.addEventListener('input', e => { const el = e.target; if (el.dataset.c == 'uq') { S.uq = el.value; render() }; if (el.name?.includes('|')) (S.menuDraft ??= {})[el.name] = el.value; if (el.dataset.c == 'note') S.form.note = el.value; if (el.dataset.d && el.type != 'checkbox' && el.type != 'date') S.draft[el.dataset.d] = el.value })
 document.addEventListener('change', e => {
   const el = e.target, c = el.dataset.c
   if ((c == 'from' || c == 'to') && el.value) { S.form[c] = el.value; if (S.form.to < S.form.from) S.form.to = S.form.from; render() }

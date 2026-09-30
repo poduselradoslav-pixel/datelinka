@@ -89,6 +89,8 @@ Kto dostane upozornenie:
 - **Odovzdanie vedenia:** Používatelia → Odovzdať vedenie. Riaditeľka s vlastnou triedou má prepínač Moja trieda / Správa škôlky.
 - **Dochádzka (migrácia `…_dochadzka_potvrdenie.sql`):** trieda je mriežka polí. Červené = odhlásené/chýba, zelené = potvrdené učiteľkou, oranžové = nespracované (po 8:00 sa ťuknutím otvoria možnosti).
 - **Práva rolí (migrácia `…_prava_rol.sql`):** učiteľka vidí len deti svojej triedy (a triedy, kde má dnes záskok) a píše oznamy len svojej triede, celej MŠ píše vedenie. Nedá sa odobrať posledný aktívny admin.
+- **Ochrana údajov:** text zásad je v `app.js` (konštanta `PRIVACY`). Pred spustením ho nechajte skontrolovať zodpovednou osobou škôlky. Pri registrácii je povinný súhlas. **Záloha:** Používatelia → Stiahnuť.
+- **Trieda spracovaná (migrácia `…_trieda_spracovana.sql`):** keď je každé dieťa triedy spracované, vedenie dostane jedno upozornenie denne. Zmena e-mailu rodiča: Supabase → Authentication → Users.
 - Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
 
 ## Pravidlá zo školského poriadku
