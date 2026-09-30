@@ -176,3 +176,8 @@ Migrácia sa dá spustiť aj opakovane.
 - dochádzka cez upsert (dvojklik), týždenný súhrn pre riaditeľku v piatok o 13:00.
 V aplikácii ďalej: dochádzka dieťaťa pre rodiča (Dieťa → Dochádzka), personál na 4 týždne dopredu, tlač zoznamu triedy, udalosti do kalendára v telefóne (.ics).
 Funkcia `class_names` je zámerne dostupná aj neprihláseným (názvy tried pre registráciu).
+
+## Oprava po teste na lokálnej kópii
+- Migrácia 25 opravená (pravidlo viditeľnosti profilov zacyklilo „zmenu vlastného mena“). Súbor sa dá spustiť znova celý.
+- Prečítanie správy sa ukladá podľa času servera (posunuté hodiny v telefóne nechávali správy neprečítané).
+- Opätovné ťuknutie na Správy vráti zo vlákna na zoznam; Používatelia otvoria Čakajúcich aj keď čaká len žiadosť o ďalšie dieťa; oprava chyby v konzole pri výbere záskoku.

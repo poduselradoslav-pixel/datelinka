@@ -104,13 +104,15 @@ async function load(keys) {
   // otvorené vlákno = prečítané
   const open = S.v == 'msg' && !document.hidden && curCh() != 'staff' && (S.role == 'parent' ? S.child : S.thread)
   if ((want('msgs') || want('treads')) && open && unread(open)) {
-    const row = { user_id: S.me.id, child_id: open, channel: curCh(), read_at: new Date().toISOString() }
+    const last = D.msgs.find(m => m.child_id == open && m.channel == curCh())?.created_at   // čas servera: hodiny v telefóne môžu ísť inak
+    const row = { user_id: S.me.id, child_id: open, channel: curCh(), read_at: [new Date().toISOString(), last && new Date(last).toISOString()].filter(Boolean).sort().pop() }
     await q(sb.from('thread_reads').upsert(row, { onConflict: 'user_id,child_id,channel' }))
     D.treads = D.treads.filter(x => !(x.child_id == open && x.channel == row.channel)).concat(row)
   }
   const sopen = S.v == 'msg' && !document.hidden && curCh() == 'staff' && (S.role == 'admin' ? S.sthread : S.me.id)
   if ((want('smsgs') || want('sreads')) && sopen && sunread(sopen)) {
-    const row = { user_id: S.me.id, staff_id: sopen, read_at: new Date().toISOString() }
+    const last = D.smsgs.find(m => m.staff_id == sopen)?.created_at
+    const row = { user_id: S.me.id, staff_id: sopen, read_at: [new Date().toISOString(), last && new Date(last).toISOString()].filter(Boolean).sort().pop() }
     await q(sb.from('staff_reads').upsert(row, { onConflict: 'user_id,staff_id' }))
     D.sreads = D.sreads.filter(x => x.staff_id != sopen).concat(row)
   }
@@ -320,7 +322,7 @@ V.users = () => {
   const parents = active.filter(p => p.role == 'parent'), sel = 'min-height:38px;padding:4px 8px;font-size:13px;width:auto'
   const kidsOf = id => S.d.guardians.filter(g => g.parent_id == id).map(g => byId(S.d.children, g.child_id)?.name).filter(Boolean)
   const uq = norm(S.uq ?? ''), hitU = p => !uq || norm(`${p.full_name ?? ''} ${p.email} ${kidsOf(p.id).join(' ')}`).includes(uq), hitK = k => !uq || norm(k.name).includes(uq) || S.d.guardians.some(g => g.child_id == k.id && hitU(byId(P, g.parent_id) ?? {}))
-  const tab = S.utab ?? (pending.length ? 'pending' : 'people'), tl = [['pending', `Čakajúci${pending.length + S.d.requests.length ? ` (${pending.length + S.d.requests.length})` : ''}`], ['people', 'Ľudia'], ['kids', 'Deti'], ['admin', 'Správa']]
+  const tab = S.utab ?? (pending.length || S.d.requests.length ? 'pending' : 'people'), tl = [['pending', `Čakajúci${pending.length + S.d.requests.length ? ` (${pending.length + S.d.requests.length})` : ''}`], ['people', 'Ľudia'], ['kids', 'Deti'], ['admin', 'Správa']]
   const T = {
     pending: ` <div class="lbl">Čakajú na schválenie (${pending.length})</div>
  ${pending.map(p => { const hit = S.d.children.filter(k => p.requested_child && matches(p.requested_child, k.name)), rest = S.d.children.filter(k => !hit.includes(k))
@@ -616,7 +618,7 @@ V.kitchen = () => {
 
 // ---------- akcie ----------
 const A = {
-  go: d => { S.v = d.v; scrollTo(0, 0) },
+  go: d => { if (d.v == 'msg' && S.v == 'msg') S.thread = S.sthread = null; S.v = d.v; scrollTo(0, 0) },   // opätovné ťuknutie na Správy = späť na zoznam
   menu: () => { S.menu = !S.menu; S.bell = false },
   bell: () => { S.bell = !S.bell; S.menu = false },
   theme: d => window.theme?.set(d.m),
@@ -991,7 +993,7 @@ document.addEventListener('change', e => {
   if (c == 'tpl' && el.value) { const t = byId(S.d.tpls, el.value); [0, 1, 2, 3, 4].forEach(i => { const day = add(MON, i + S.week * 7); ['snack', 'lunch', 'afternoon'].forEach(k => { (S.menuDraft ??= {})[day + '|' + k] = t?.days?.[i]?.[k] ?? '' }) }); render(); toast('Šablóna vložená, skontrolujte a uložte') }
   if (c == 'kcls') run(async () => { await q(sb.from('children').update({ class_id: +el.value }).eq('id', el.dataset.id)); toast('Dieťa presunuté') })
   if (c == 'link' && el.value) run(async () => { await q(sb.from('guardians').insert({ child_id: +el.dataset.child, parent_id: el.value })); toast('Rodič priradený') })
-  if (el.dataset.d) S.draft[el.dataset.d] = el.type == 'checkbox' ? el.checked : el.value
+  if (el.dataset.d && !c && S.draft) S.draft[el.dataset.d] = el.type == 'checkbox' ? el.checked : el.value
 })
 document.addEventListener('visibilitychange', () => {
   if (document.hidden || !S.me) return
