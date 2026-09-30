@@ -159,3 +159,9 @@ Správy vedenia: zoznam ukazuje len rozbehnuté konverzácie, novú začne riadi
 - kuchyňa a výpomoc môžu byť záskokom (Personál → výber záskoku); v deň záskoku majú lištu Trieda / Správy,
 - učiteľka, kuchyňa a výpomoc si nahlásia neprítomnosť (Menu → Nahlásiť moju neprítomnosť); riaditeľke príde urgentné upozornenie, neprítomnej sa na ten deň vypne trieda a nechodia jej správy triedy.
 Migrácia sa dá spustiť aj opakovane.
+
+## Migrácia 24 – správy personálu s riaditeľkou, nové verzie, push
+`20260930000024_spravy_personal.sql`: tabuľky `staff_messages` a `staff_reads` (chat učiteľka/kuchyňa/výpomoc ↔ riaditeľka, vedenie vidí všetky konverzácie v Správy → Personál).
+- Nové správy už nechodia do zvončeka, počet neprečítaných je na ikone Správy (a na ikone platformy). Push zostáva.
+- Ťuknutie na push otvorí priamo správu/oznam, ktorého sa týka.
+- `sw.js` načítava súbory platformy vždy čerstvé a platforma sa po nahratí nového `app.js`/`style.css` na GitHub sama obnoví (pri návrate do nej alebo do 45 s).

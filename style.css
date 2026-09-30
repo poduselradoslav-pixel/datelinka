@@ -121,3 +121,5 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
   #app.side{padding-bottom:100px}
 }
 @media print{#app.side{margin:0!important}}
+nav.tabs button{position:relative}
+nav.tabs .nb{position:absolute;top:6px;left:calc(50% + 4px);min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#E8833A;color:#fff;font:700 11px/18px Figtree,sans-serif;font-style:normal;text-align:center}
