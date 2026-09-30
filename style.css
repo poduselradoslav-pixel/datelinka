@@ -123,3 +123,15 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
 @media print{#app.side{margin:0!important}}
 nav.tabs button{position:relative}
 nav.tabs .nb{position:absolute;top:6px;left:calc(50% + 4px);min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#E8833A;color:#fff;font:700 11px/18px Figtree,sans-serif;font-style:normal;text-align:center}
+.acal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:13px}
+.acal b{font-size:11px;color:var(--mute);font-weight:600}
+.acal span{padding:7px 0;border-radius:8px;font-weight:600}
+.acal .ok,.dot.ok{background:var(--gs);color:var(--gd)}
+.acal .abs,.dot.abs{background:#FBE3E0;color:#8C1D12}
+.acal .miss,.dot.miss{background:var(--o);color:var(--ot)}
+.acal .new,.dot.new{background:var(--lock)}
+.acal .off{color:var(--mute);opacity:.5}
+.acal .fut{color:var(--mute)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 3px 0 8px;vertical-align:-1px}
+:root[data-theme=dark] .acal .abs,:root[data-theme=dark] .dot.abs{background:#4A1F1B;color:#F5B5AD}
+#app.wide.withnav{padding-bottom:100px}

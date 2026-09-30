@@ -165,3 +165,14 @@ Migrácia sa dá spustiť aj opakovane.
 - Nové správy už nechodia do zvončeka, počet neprečítaných je na ikone Správy (a na ikone platformy). Push zostáva.
 - Ťuknutie na push otvorí priamo správu/oznam, ktorého sa týka.
 - `sw.js` načítava súbory platformy vždy čerstvé a platforma sa po nahratí nového `app.js`/`style.css` na GitHub sama obnoví (pri návrate do nej alebo do 45 s).
+
+## Migrácia 25 – balík vylepšení
+`20260930000025_balik_vylepseni.sql`:
+- registrácia podľa roly (rodič / učiteľka + trieda / kuchyňa / výpomoc), riaditeľka to vidí pri schvaľovaní predvyplnené,
+- uložené jedlá (zvlášť desiata/obed/olovrant, s alergénmi) a šablóny týždňov jedálnička,
+- rodič môže skrátiť prebiehajúce odhlásenie („Vráti sa skôr?“), učiteľkám príde upozornenie,
+- ankety sú pred rodičmi anonymné (vidia len súčty), mená hlasujúcich vidí personál,
+- personál vidí e-maily/telefóny len rodičov detí, ktoré má na starosti,
+- dochádzka cez upsert (dvojklik), týždenný súhrn pre riaditeľku v piatok o 13:00.
+V aplikácii ďalej: dochádzka dieťaťa pre rodiča (Dieťa → Dochádzka), personál na 4 týždne dopredu, tlač zoznamu triedy, udalosti do kalendára v telefóne (.ics).
+Funkcia `class_names` je zámerne dostupná aj neprihláseným (názvy tried pre registráciu).
