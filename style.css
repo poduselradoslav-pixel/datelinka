@@ -96,3 +96,6 @@ th{color:var(--mute);font-size:13px}.n{text-align:right;font-variant-numeric:tab
 .ktile.late{border-color:var(--ot)}
 .ktile.sel{outline:3px solid var(--ink);outline-offset:1px}
 :root[data-theme=dark] .ktile.red{background:#4A1F1B;color:#F5B5AD;border-color:#7A3A34}
+
+.card.urgent{background:#FBE3E0;border-color:#E58B80;color:#8C1D12}
+:root[data-theme=dark] .card.urgent{background:#4A1F1B;border-color:#7A3A34;color:#F5B5AD}

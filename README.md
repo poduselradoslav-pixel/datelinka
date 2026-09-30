@@ -91,6 +91,7 @@ Kto dostane upozornenie:
 - **Práva rolí (migrácia `…_prava_rol.sql`):** učiteľka vidí len deti svojej triedy (a triedy, kde má dnes záskok) a píše oznamy len svojej triede, celej MŠ píše vedenie. Nedá sa odobrať posledný aktívny admin.
 - **Ochrana údajov:** text zásad je v `app.js` (konštanta `PRIVACY`). Pred spustením ho nechajte skontrolovať zodpovednou osobou škôlky. Pri registrácii je povinný súhlas. **Záloha:** Používatelia → Stiahnuť.
 - **Trieda spracovaná (migrácia `…_trieda_spracovana.sql`):** keď je každé dieťa triedy spracované, vedenie dostane jedno upozornenie denne. Zmena e-mailu rodiča: Supabase → Authentication → Users.
+- **Urgentný oznam (migrácia `…_urgentny_oznam.sql`):** typ Urgentné v Oznamoch príde všetkým rodičom aj pri vypnutých upozorneniach a pushi, pripne sa a vyžaduje potvrdenie. Staršie oznamy sa dotiahnu tlačidlom Staršie oznamy.
 - Kuchyňa: výber alergénov v jedálničku a tlač denného zoznamu. Rodič: vyhlásenie o bezinfekčnosti v Neprítomnosti.
 
 ## Pravidlá zo školského poriadku
